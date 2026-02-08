@@ -1,0 +1,80 @@
+# Laravel Development Docker Compose
+# Run: docker compose -f docker-compose.dev.yml up --build
+
+services:
+  laravel:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: frontier-laravel
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor # Don't override vendor
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=${APP_KEY:-base64:your-key-here}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${POSTGRES_DB:-frontier_db}
+      - DB_USERNAME=${POSTGRES_USER:-frontier}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-frontier_dev}
+    networks:
+      - frontier-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: frontier-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-frontier}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-frontier_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-frontier_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-frontier} -d ${POSTGRES_DB:-frontier_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontier-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: frontier-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@frontier.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontier-network
+
+networks:
+  frontier-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: frontier_postgres_data
+  pgadmin_data:
+    name: frontier_pgadmin_data

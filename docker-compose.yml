@@ -1,0 +1,92 @@
+# Frontier - Complete Docker Compose Stack
+# PostgreSQL + pgAdmin + Laravel Backend
+
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: frontier-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-frontier}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-frontier_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-frontier_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-frontier} -d ${POSTGRES_DB:-frontier_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontier-network
+
+  # ===========================================
+  # pgAdmin (Database Management UI)
+  # ===========================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: frontier-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@frontier.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontier-network
+
+  # ===========================================
+  # Laravel Backend API
+  # ===========================================
+  laravel:
+    build:
+      context: ./backend-laravel
+      dockerfile: Dockerfile.dev
+    container_name: frontier-laravel
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend-laravel:/var/www/html
+      - laravel_vendor:/var/www/html/vendor
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:QWxhcm1hbnRlRmluYWxLZXlGb3JGcm9udGllckFwcA==
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${POSTGRES_DB:-frontier_db}
+      - DB_USERNAME=${POSTGRES_USER:-frontier}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-frontier_dev}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontier-network
+
+networks:
+  frontier-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: frontier_postgres_data
+  pgadmin_data:
+    name: frontier_pgadmin_data
+  laravel_vendor:
+    name: frontier_laravel_vendor
