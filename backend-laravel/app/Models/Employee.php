@@ -56,4 +56,9 @@ class Employee extends Model
     {
         return $this->hasMany(OperationalEvent::class);
     }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
 }

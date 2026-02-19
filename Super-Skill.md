@@ -61,6 +61,12 @@ ANTES de generar una sola línea de código, debes ejecutar este proceso mental 
     *   Frontend: Nunca confíes en la entrada del usuario.
     *   Nunca expongas secretos o lógica sensible en componentes de cliente.
 
+## 4. 🌩️ Infraestructura & Entorno (Cloudflare Tunnels)
+**CRÍTICO:** Este proyecto opera mediante **Cloudflare Tunnels** para exponer servicios locales a internet (`api.pherce.com`, `app.pherce.com`).
+1.  **Inmutabilidad del Entorno:** NUNCA, bajo ninguna circunstancia, sobrescribas `APP_URL` o `NEXT_PUBLIC_API_URL` a `localhost` automáticamente.
+2.  **Estado por Defecto:** Asume siempre que la configuración apuntando a `*.pherce.com` es la CORRECTA y necesaria para el funcionamiento del túnel, incluso en desarrollo local.
+3.  **Arranque:** Al iniciar, verifica que el túnel esté activo (`cloudflared tunnel run`) en lugar de intentar "arreglar" las URLs.
+
 ---
 
 ## 3. 📚 Referencias Oficiales

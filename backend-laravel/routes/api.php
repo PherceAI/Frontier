@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmployeesController;
 use App\Http\Controllers\Api\AreasController;
 use App\Http\Controllers\Api\ItemsController;
-use App\Http\Controllers\Api\OpsController;
+
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Middleware\JwtAuth;
 use App\Http\Middleware\SessionAuth;
@@ -27,63 +27,6 @@ Route::get('/health', function () {
         ],
     ]);
 });
-
-// TEMP TEST ROUTE - OVERFLOW SIMULATION
-Route::get('/test-overflow', function () {
-    $employee = \App\Models\Employee::where('full_name', 'Test Auth')->first();
-    if (!$employee)
-        return 'No Test Auth employee found';
-
-    $area = $employee->areas()->where('type', 'PROCESSOR')->first();
-    // Assign if missing
-    if (!$area) {
-        $company = \App\Models\Company::first();
-        $area = \App\Models\OperationalArea::create(['company_id' => $company->id, 'name' => 'Laundry Test', 'type' => 'PROCESSOR']);
-        $employee->areas()->attach($area->id);
-    }
-
-    // Find an item
-    $item = \App\Models\CatalogItem::first();
-    if (!$item) {
-        $item = \App\Models\CatalogItem::create(['company_id' => $employee->company_id, 'name' => 'Test Item', 'category' => 'HOUSEKEEPING']);
-    }
-
-    try {
-        $handler = new \App\Services\Operations\Handlers\LaundryHandler();
-        $session = null;
-        $validData = [
-            'cycles' => 1,
-            'items' => [
-                ['item_id' => $item->id, 'quantity' => 99999] // OVERFLOW!
-            ]
-        ];
-
-        $handler->process($area, $employee, $session, $validData);
-        return 'FAILED: Should have thrown ValidationException';
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return 'SUCCESS: Validation Exception Caught: ' . json_encode($e->errors());
-    } catch (\Exception $e) {
-        return 'ERROR: Wrong Exception: ' . $e->getMessage();
-    }
-});
-
-// TEMP TEST ROUTE
-Route::get('/test-create-emp', function () {
-    $company = \App\Models\Company::first();
-    if (!$company) {
-        $company = \App\Models\Company::create(['name' => 'Test Co', 'code' => 'TEST']);
-    }
-    $emp = \App\Models\Employee::create([
-        'company_id' => $company->id,
-        'full_name' => 'Test Auth',
-        'employee_code' => 'TA-' . rand(100, 999),
-        'access_pin_hash' => \Illuminate\Support\Facades\Hash::make('9999'),
-        'is_active' => true
-    ]);
-    return $emp;
-});
-
 
 
 /*
@@ -136,18 +79,6 @@ Route::prefix('config')->middleware(JwtAuth::class)->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Operations Routes (Employee Session Auth)
-|--------------------------------------------------------------------------
-*/
-Route::prefix('ops')->middleware(SessionAuth::class)->group(function () {
-    Route::post('/events', [OpsController::class, 'createEvent']);
-    Route::get('/events', [OpsController::class, 'getEvents']);
-    Route::get('/pending', [OpsController::class, 'getPending']);
-    Route::get('/catalog', [OpsController::class, 'getCatalog']);
-});
-
-/*
-|--------------------------------------------------------------------------
 | New Operational Routes (Housekeeping & Laundry)
 |--------------------------------------------------------------------------
 */
@@ -170,4 +101,48 @@ Route::prefix('dashboard')->middleware(JwtAuth::class)->group(function () {
     Route::get('/employee/{id}/stats', [DashboardController::class, 'employeeStats']);
     // Bitacora (Detailed Area Logs)
     Route::get('/area/{id}/logs', [\App\Http\Controllers\Api\OperationsController::class, 'getAreaLogs']);
+
+    // Supabase ERP Integration
+    Route::get('/erp/ocupacion', [\App\Http\Controllers\Erp\SupabaseController::class, 'index']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Room Management Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(JwtAuth::class)->group(function () {
+    Route::get('/rooms', [\App\Http\Controllers\Api\RoomController::class, 'index']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Task Management Routes (Admin Only)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('tasks')->middleware(JwtAuth::class)->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\TaskController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\Api\TaskController::class, 'store']);
+    Route::get('/stats', [\App\Http\Controllers\Api\TaskController::class, 'stats']);
+    Route::patch('/{id}', [\App\Http\Controllers\Api\TaskController::class, 'update']);
+    Route::delete('/{id}', [\App\Http\Controllers\Api\TaskController::class, 'destroy']);
+});
+
+Route::prefix('task-templates')->middleware(JwtAuth::class)->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\TaskController::class, 'indexTemplates']);
+    Route::post('/', [\App\Http\Controllers\Api\TaskController::class, 'storeTemplate']);
+    Route::patch('/{id}', [\App\Http\Controllers\Api\TaskController::class, 'updateTemplate']);
+    Route::delete('/{id}', [\App\Http\Controllers\Api\TaskController::class, 'destroyTemplate']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Employee Task Routes (Session Auth)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('my-tasks')->middleware(SessionAuth::class)->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\MyTaskController::class, 'index']);
+    Route::patch('/{id}/start', [\App\Http\Controllers\Api\MyTaskController::class, 'start']);
+    Route::patch('/{id}/complete', [\App\Http\Controllers\Api\MyTaskController::class, 'complete']);
+    Route::patch('/{id}/checklist/{itemId}', [\App\Http\Controllers\Api\MyTaskController::class, 'toggleChecklist']);
 });

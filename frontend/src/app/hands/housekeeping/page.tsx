@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { BedDouble, BedSingle, Box, Columns, Footprints, ArrowRight, LogOut, CheckCircle } from 'lucide-react';
+import { BedDouble, BedSingle, Box, Columns, Footprints, ArrowRight, LogOut, CheckCircle, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
+import HandsBottomNav from '@/components/hands/HandsBottomNav';
 
 // Dynamic Import for Service
 const loadService = () => import('@/services/operations');
@@ -15,39 +17,42 @@ export default function HousekeepingPage() {
     const [employeeName, setEmployeeName] = useState('');
     const [items, setItems] = useState<any[]>([]);
     const [counts, setCounts] = useState<{ [key: string]: number }>({});
-    const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Load Catalog with Auto-Refresh
+    const { data: catalogData, isLoading: isCatalogLoading } = useQuery({
+        queryKey: ['housekeeping-catalog'],
+        queryFn: async () => {
+            const { opsService } = await loadService();
+            return opsService.getCatalog();
+        },
+        refetchInterval: 5000,
+    });
+
+    // Initialize items and counts when catalog loads
     useEffect(() => {
-        const init = async () => {
-            try {
-                // Check Auth
-                const empStr = localStorage.getItem('employee');
-                if (!empStr) {
-                    router.push('/hands');
-                    return;
+        if (catalogData?.data) {
+            setItems(catalogData.data);
+            setCounts(prev => {
+                // Only initialize if empty to preserve user input during refreshes
+                if (Object.keys(prev).length === 0) {
+                    const initialCounts: any = {};
+                    catalogData.data.forEach((item: any) => initialCounts[item.id] = 0);
+                    return initialCounts;
                 }
-                const emp = JSON.parse(empStr);
-                setEmployeeName(emp.fullName.split(' ')[0]);
+                return prev;
+            });
+        }
+    }, [catalogData]);
 
-                // Load Catalog
-                const { opsService } = await loadService();
-                const res = await opsService.getCatalog();
-                setItems(res.data);
-
-                // Init counts
-                const initialCounts: any = {};
-                res.data.forEach((item: any) => initialCounts[item.id] = 0);
-                setCounts(initialCounts);
-
-            } catch (error) {
-                console.error(error);
-                toast.error("Error cargando catálogo");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        init();
+    useEffect(() => {
+        const empStr = localStorage.getItem('employee');
+        if (!empStr) {
+            router.push('/hands');
+            return;
+        }
+        const emp = JSON.parse(empStr);
+        setEmployeeName(emp.fullName.split(' ')[0]);
     }, [router]);
 
     const handleIncrement = (id: string) => {
@@ -108,7 +113,7 @@ export default function HousekeepingPage() {
         router.push('/hands');
     };
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5] text-slate-400">Cargando...</div>;
+    if (isCatalogLoading) return <div className="min-h-screen flex items-center justify-center bg-[#F0F2F5] text-slate-400">Cargando...</div>;
 
     return (
         <main className="min-h-screen bg-[#F0F2F5] pb-24 font-[family-name:var(--font-outfit)]">
@@ -118,9 +123,11 @@ export default function HousekeepingPage() {
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Camareras</p>
                     <h1 className="text-2xl font-bold text-slate-900">Hola, {employeeName}</h1>
                 </div>
-                <button onClick={handleLogout} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors">
-                    <LogOut className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={handleLogout} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors">
+                        <LogOut className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Content */}
@@ -164,11 +171,11 @@ export default function HousekeepingPage() {
             </div>
 
             {/* Footer Action */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#F0F2F5] via-[#F0F2F5] to-transparent z-20">
+            <div className="fixed bottom-[5.5rem] left-0 right-0 p-4 z-40 bg-gradient-to-t from-[#F0F2F5] via-[#F0F2F5]/80 to-transparent">
                 <Button
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-lg font-semibold shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all"
+                    className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-lg font-semibold shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all backdrop-blur-md"
                 >
                     {isSubmitting ? 'Enviando...' : (
                         <span className="flex items-center gap-2">
@@ -177,6 +184,9 @@ export default function HousekeepingPage() {
                     )}
                 </Button>
             </div>
+
+            {/* Bottom Navigation */}
+            <HandsBottomNav />
         </main>
     );
 }

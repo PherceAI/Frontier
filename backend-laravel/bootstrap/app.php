@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // CORS middleware for API
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

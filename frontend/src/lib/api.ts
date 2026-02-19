@@ -68,9 +68,10 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
             console.error('[API Error]', {
                 endpoint,
                 status: response.status,
+                statusText: response.statusText,
                 code: errorCode,
                 message: errorMsg,
-                response: typeof data === 'object' ? JSON.stringify(data, null, 2) : data
+                responseBody: data // Log the raw data object or string
             });
 
             // Throw simple error object or custom class? Keep it simple for now.
@@ -83,10 +84,10 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
         // Handle Network Errors (Fetch failed)
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
             console.error('[Network Error] Backend unreachable', endpoint);
-            throw new Error('No se pudo conectar con el servidor. Verifica tu conexión.');
+            throw new Error(`No se pudo conectar con el servidor (${API_URL}). Verifica que el backend esté corriendo.`);
         }
 
-        console.error('[System Error]', { endpoint, error });
+        console.error('[System Error]', { endpoint, error, stack: error.stack });
         throw error;
     }
 }
@@ -206,6 +207,7 @@ export const opsApi = {
 };
 
 import { CatalogItem, HousekeepingLogPayload, OperationEventResponse, LaundryStatusResponse } from '../types/operations';
+import { RoomData } from '../types/rooms';
 
 export const operationsApi = {
     catalog: {
@@ -238,3 +240,28 @@ export const operationsApi = {
         }
     }
 };
+
+export const erpApi = {
+    getRooms: async () => {
+        const res = await apiRequest<any>('/dashboard/erp/ocupacion');
+        // Handle both { data: [...] } and directly [...]
+        return Array.isArray(res) ? res : (res?.data || []);
+    }
+};
+
+const api = {
+    auth: authApi,
+    config: configApi,
+    ops: opsApi,
+    operations: operationsApi,
+    erp: erpApi,
+    dashboard: dashboardApi,
+    rooms: {
+        list: async () => {
+            const res = await apiRequest<{ data: any[] }>('/rooms');
+            return res.data;
+        }
+    }
+};
+
+export default api;

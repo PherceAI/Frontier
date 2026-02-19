@@ -13,16 +13,19 @@ export default function TowerDashboard() {
     const { data: bottleneck, isLoading: bottleneckLoading } = useQuery({
         queryKey: ['bottleneck'],
         queryFn: dashboardApi.getBottleneck,
+        refetchInterval: 30000,
     });
 
     const { data: activities, isLoading: activitiesLoading } = useQuery({
         queryKey: ['activities'],
         queryFn: () => dashboardApi.getActivities({ limit: '10' }),
+        refetchInterval: 30000,
     });
 
     const { data: employees } = useQuery({
         queryKey: ['employees'],
         queryFn: () => configApi.employees.list(),
+        refetchInterval: 30000,
     });
 
     if (bottleneckLoading) {

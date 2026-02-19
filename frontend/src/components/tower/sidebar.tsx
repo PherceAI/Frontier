@@ -29,11 +29,15 @@ import {
     ChevronUp,
     ShieldCheck,
     Bell,
-    HelpCircle
+    HelpCircle,
+    Building2,
+    ClipboardList
 } from 'lucide-react';
 
 const menuItems = [
     { title: 'Dashboard', href: '/tower', icon: LayoutDashboard },
+    { title: 'Tareas', href: '/tower/tasks', icon: ClipboardList },
+    { title: 'Habitaciones', href: '/tower/rooms', icon: Building2 },
     { title: 'Empleados', href: '/tower/employees', icon: Users },
     { title: 'Áreas', href: '/tower/areas', icon: Map },
 ];

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -13,55 +14,47 @@ import {
     History,
     Plus,
     Minus,
-    AlertCircle
+    AlertCircle,
+    ClipboardList
 } from 'lucide-react';
 import { toast } from 'sonner';
+import HandsBottomNav from '@/components/hands/HandsBottomNav';
 
 const loadService = () => import('@/services/operations');
 
 export default function LaundryPage() {
     const router = useRouter();
     const [employeeName, setEmployeeName] = useState('');
-    const [incoming, setIncoming] = useState<any[]>([]);
-    const [history, setHistory] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // const [isLoading, setIsLoading] = useState(true); // Handled by useQuery
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const queryClient = useQueryClient();
 
     // Current Cycle Composition
     // Map of itemId -> quantity to wash in this cycle
     const [currentLoad, setCurrentLoad] = useState<Record<string, number>>({});
 
-    const fetchStatus = async () => {
-        try {
+    const { data: laundryData, isLoading } = useQuery({
+        queryKey: ['laundry-status'],
+        queryFn: async () => {
             const { opsService } = await loadService();
-            const res = await opsService.getLaundryStatus();
-            const data = res.data;
-            setIncoming(data?.collections || []);
-            setHistory(data?.history || []);
-        } catch (error) {
-            toast.error('Error actualizando estado');
-        }
-    };
+            return opsService.getLaundryStatus();
+        },
+        refetchInterval: 5000, // Poll every 5 seconds
+        staleTime: 0,
+    });
 
     useEffect(() => {
-        const init = async () => {
-            try {
-                const empStr = localStorage.getItem('employee');
-                if (!empStr) {
-                    router.push('/hands');
-                    return;
-                }
-                const emp = JSON.parse(empStr);
-                setEmployeeName(emp.fullName.split(' ')[0]);
-                await fetchStatus();
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        init();
+        const empStr = localStorage.getItem('employee');
+        if (!empStr) {
+            router.push('/hands');
+            return;
+        }
+        const emp = JSON.parse(empStr);
+        setEmployeeName(emp.fullName.split(' ')[0]);
     }, [router]);
+
+    const incoming = laundryData?.data?.collections || [];
+    const history = laundryData?.data?.history || [];
 
     const adjustLoad = (itemId: string, delta: number, max: number) => {
         setCurrentLoad(prev => {
@@ -105,7 +98,7 @@ export default function LaundryPage() {
 
             toast.success("Ciclo registrado exitosamente");
             setCurrentLoad({}); // Reset form
-            await fetchStatus(); // Refresh pending list and history
+            await queryClient.invalidateQueries({ queryKey: ['laundry-status'] });
 
         } catch (error: any) {
             if (error.response?.status === 422) {
@@ -153,9 +146,11 @@ export default function LaundryPage() {
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 leading-tight">Hola, {employeeName}</h1>
                 </div>
-                <button onClick={handleLogout} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-95">
-                    <LogOut className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button onClick={handleLogout} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-95">
+                        <LogOut className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             <div className="px-5 space-y-8">
@@ -325,7 +320,7 @@ export default function LaundryPage() {
             </div>
 
             {/* Sticky Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#F0F2F5] via-[#F0F2F5] to-transparent z-40">
+            <div className="fixed bottom-[5.5rem] left-0 right-0 p-4 z-40 bg-gradient-to-t from-[#F0F2F5] via-[#F0F2F5]/80 to-transparent">
                 <AnimatePresence>
                     {currentLoadCount > 0 && (
                         <motion.div
@@ -336,7 +331,7 @@ export default function LaundryPage() {
                             <Button
                                 onClick={handleRegisterCycle}
                                 disabled={isSubmitting}
-                                className="w-full h-16 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-lg font-bold shadow-2xl shadow-slate-900/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                                className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-lg font-bold shadow-2xl shadow-slate-900/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 backdrop-blur-md"
                             >
                                 {isSubmitting ? 'Guardando...' : (
                                     <>
@@ -352,6 +347,11 @@ export default function LaundryPage() {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Bottom Navigation */}
+            <HandsBottomNav />
         </main>
     );
 }
+
+

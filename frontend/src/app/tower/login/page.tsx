@@ -120,9 +120,10 @@ export default function TowerLoginPage() {
 
                 {/* Demo Credentials Hint - Remove in Prod */}
                 <div className="mt-8 text-center bg-white/40 backdrop-blur-sm py-3 px-4 rounded-xl border border-white/40 inline-block w-full">
-                    <p className="text-xs text-slate-500 font-mono">
-                        <span className="font-bold text-slate-700">DEMO:</span> admin@hotel.com / Admin123!
-                    </p>
+                    <div className="text-xs text-slate-500 font-mono">
+                        <span className="font-bold text-slate-700">DEMO:</span>
+                        {" admin@hotel.com / Admin123!"}
+                    </div>
                 </div>
 
             </motion.div>

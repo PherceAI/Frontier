@@ -82,11 +82,27 @@ class LaundryHandler implements OperationHandler
 
                     $balance = (int) $balance;
 
-                    // STRICT VALIDATION
+                    // STRICT VALIDATION -> AUTO-CORRECTION
                     if ($qty > $balance) {
-                        // Stronger Error Message for UX
-                        throw ValidationException::withMessages([
-                            'quantity' => "Error Crítico: Intentas registrar {$qty} unidades, pero el inventario sucio disponible es de solo {$balance}. Verifica que las camareras hayan reportado la salida de estas prendas."
+                        $diff = $qty - $balance;
+
+                        // Auto-create Correction Event (Inflow)
+                        // Log it as "CORRECTION" to explain where these items came from
+                        $correctionEvent = OperationalEvent::create([
+                            'id' => Str::uuid(),
+                            'company_id' => $event->company_id,
+                            'employee_id' => $event->employee_id, // Same employee reporting
+                            'area_id' => $event->area_id,
+                            'session_id' => $event->session_id,
+                            'event_type' => 'CORRECTION',
+                            'timestamp' => now()->subSecond(), // Just before the supply
+                            'notes' => "Auto-correction: Found {$diff} unlogged items during processing",
+                        ]);
+
+                        EventDetail::create([
+                            'event_id' => $correctionEvent->id,
+                            'item_id' => $item['item_id'],
+                            'quantity' => $diff,
                         ]);
                     }
 
