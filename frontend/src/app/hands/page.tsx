@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export default function HandsPage() {
     const [employeeId, setEmployeeId] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [shake, setShake] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -22,12 +23,12 @@ export default function HandsPage() {
                 try {
                     const employee = JSON.parse(employeeData);
                     const areas = employee.areas || [];
-                    const isHousekeeping = areas.some((a: any) => a.type === 'SOURCE');
-                    const isLaundry = areas.some((a: any) => a.type === 'PROCESSOR');
+                    const areaNames = areas.map((a: any) => (a.name || '').toLowerCase());
 
-                    if (isLaundry) router.push('/hands/laundry');
-                    else if (isHousekeeping) router.push('/hands/housekeeping');
-                    else router.push('/hands/dashboard');
+                    if (areaNames.some((n: string) => n.includes('lavander'))) router.push('/hands/lavanderia');
+                    else if (areaNames.some((n: string) => n.includes('camarer'))) router.push('/hands/camareros');
+                    else if (areaNames.some((n: string) => n.includes('limp'))) router.push('/hands/limpieza');
+                    else if (areaNames.some((n: string) => n.includes('cocina'))) router.push('/hands/cocina');
                 } catch (e) {
                     // Invalid data, better to stay here and re-login
                 }
@@ -56,23 +57,28 @@ export default function HandsPage() {
 
             toast.success(`Bienvenido, ${data.employee.fullName.split(' ')[0]}`);
 
-            // Redirect based on Area Type
-            const areas = data.employee.areas;
-            const isHousekeeping = areas.some(a => a.type === 'SOURCE');
-            const isLaundry = areas.some(a => a.type === 'PROCESSOR');
+            // Redirect based on Area Name
+            const areas = data.employee.areas || [];
+            const areaNames = areas.map((a: any) => (a.name || '').toLowerCase());
 
-            if (isLaundry) {
-                router.push('/hands/laundry');
-            } else if (isHousekeeping) {
-                router.push('/hands/housekeeping');
+            if (areaNames.some((n: string) => n.includes('lavander'))) {
+                router.push('/hands/lavanderia');
+            } else if (areaNames.some((n: string) => n.includes('camarer'))) {
+                router.push('/hands/camareros');
+            } else if (areaNames.some((n: string) => n.includes('limp'))) {
+                router.push('/hands/limpieza');
+            } else if (areaNames.some((n: string) => n.includes('cocina'))) {
+                router.push('/hands/cocina');
             } else {
-                toast.error("No tiene área asignada");
+                toast.error("No se encontró área asignada al empleado.");
             }
 
         } catch (error: any) {
             toast.error(error.message || "Error de autenticación");
             if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
             setEmployeeId('');
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
         } finally {
             setIsLoading(false);
         }
@@ -123,7 +129,11 @@ export default function HandsPage() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">ID de Colaborador</label>
-                            <div className="relative group">
+                            <motion.div
+                                className="relative group"
+                                animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}}
+                                transition={{ duration: 0.4 }}
+                            >
                                 <UserCheck className={`absolute left-4 top-4 w-6 h-6 transition-colors duration-300 ${employeeId ? 'text-blue-500' : 'text-slate-300'}`} />
                                 <Input
                                     type="password"
@@ -133,7 +143,7 @@ export default function HandsPage() {
                                     placeholder="••••••"
                                     className="pl-12 bg-slate-50 border-slate-200 text-slate-900 text-3xl font-mono tracking-[0.5em] h-16 rounded-2xl text-center focus:ring-0 focus:border-blue-500 transition-all cursor-default select-none shadow-inner"
                                 />
-                            </div>
+                            </motion.div>
                         </div>
 
                         {/* Numeric Keypad */}

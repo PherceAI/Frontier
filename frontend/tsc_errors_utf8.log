@@ -1,0 +1,6 @@
+﻿src/app/api/operations/lavanderia/route.ts(22,17): error TS2322: Type '{ item_id: string | null; quantity: number; metadata: {} | null; }[]' is not assignable to type '(Without<EventDetailCreateWithoutEventInput, EventDetailUncheckedCreateWithoutEventInput> & EventDetailUncheckedCreateWithoutEventInput) | (Without<...> & EventDetailCreateWithoutEventInput) | EventDetailCreateWithoutEventInput[] | EventDetailUncheckedCreateWithoutEventInput[] | undefined'.
+  Type '{ item_id: string | null; quantity: number; metadata: {} | null; }[]' is not assignable to type 'EventDetailCreateWithoutEventInput[]'.
+    Type '{ item_id: string | null; quantity: number; metadata: {} | null; }' is not assignable to type 'EventDetailCreateWithoutEventInput'.
+      Types of property 'metadata' are incompatible.
+        Type '{} | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+          Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.

@@ -1,7 +1,7 @@
 // Tower Login Page - Luminous Enterprise
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,14 @@ export default function TowerLoginPage() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        // Clear all previous tokens strictly
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+        localStorage.removeItem('token');
+        localStorage.removeItem('sessionToken');
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -73,7 +81,7 @@ export default function TowerLoginPage() {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="admin@frontier.cloud"
+                                    placeholder="admin@hotel.com"
                                     required
                                     className="pl-12 bg-slate-50 border-slate-200 focus:border-slate-400 focus:ring-slate-200 text-slate-900 h-12 rounded-xl transition-all"
                                 />
@@ -121,8 +129,8 @@ export default function TowerLoginPage() {
                 {/* Demo Credentials Hint - Remove in Prod */}
                 <div className="mt-8 text-center bg-white/40 backdrop-blur-sm py-3 px-4 rounded-xl border border-white/40 inline-block w-full">
                     <div className="text-xs text-slate-500 font-mono">
-                        <span className="font-bold text-slate-700">DEMO:</span>
-                        {" admin@hotel.com / Admin123!"}
+                        <span className="font-bold text-slate-700">DEMO: </span>
+                        <span>admin@hotel.com / Admin123!</span>
                     </div>
                 </div>
 

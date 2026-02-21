@@ -165,49 +165,50 @@ CREATE INDEX IF NOT EXISTS idx_event_details_event ON event_details(event_id);
 -- =============================================
 
 -- Insert company
-INSERT INTO companies (id, name, code) 
-VALUES ('11111111-1111-1111-1111-111111111111', 'Hotel Frontier', 'FRONTIER')
+INSERT INTO companies (id, name, code, updated_at) 
+VALUES ('11111111-1111-1111-1111-111111111111', 'Hotel Frontier', 'FRONTIER', NOW())
 ON CONFLICT (code) DO NOTHING;
 
 -- Insert admin user (password: Admin123!)
-INSERT INTO users (id, company_id, email, password_hash, full_name, role)
+INSERT INTO users (id, company_id, email, password_hash, full_name, role, updated_at)
 VALUES (
     '22222222-2222-2222-2222-222222222222',
     '11111111-1111-1111-1111-111111111111',
     'admin@hotel.com',
-    '$argon2id$v=19$m=65536,t=3,p=4$kCoynwKCfXMkHJfWcVL5xg$IvXQBDvqlbXKRjNCaKMOADcZLt4M1kBqHMVRZECPjGQ',
+    '$2b$10$Uombyvp7NvL.HyUOTc3sku8LtykSX90NrfppAXRDn8fgbWnuZYI4zK',
     'Administrador',
-    'OWNER'
+    'OWNER',
+    NOW()
 ) ON CONFLICT (email) DO NOTHING;
 
 -- Insert areas
 INSERT INTO operational_areas (id, company_id, name, type, description) VALUES
-    ('aaaa1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Recepción', 'SOURCE', 'Punto de origen de solicitudes'),
-    ('aaaa2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Pisos', 'SOURCE', 'Habitaciones y pisos'),
+    ('aaaa1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Limpieza', 'SOURCE', 'Limpieza de áreas públicas y profunda'),
+    ('aaaa2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Camareras', 'SOURCE', 'Habitaciones y pisos'),
     ('aaaa3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Lavandería', 'PROCESSOR', 'Procesamiento de ropa'),
-    ('aaaa4444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'Mantenimiento', 'PROCESSOR', 'Reparaciones y mantenimiento')
+    ('aaaa4444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'Cocina', 'PROCESSOR', 'Alimentos y Bebidas')
 ON CONFLICT DO NOTHING;
 
 -- Insert employees (PINs: María=1234, Pedro=5678, Ana=9012)
-INSERT INTO employees (id, company_id, full_name, employee_code, access_pin_hash, access_pin_plain) VALUES
-    ('eeee1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'María García', 'EMP-001', '$2b$10$kAjYJLYs.D5.Xz1e/fHeVewJdz.9pBJvWCHHf4A8Yx7nqRnEz8vFi', '1234'),
-    ('eeee2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Pedro López', 'EMP-002', '$2b$10$LXv5.EpJfuZnPT7ZXQH5k.yGQGi4GvMVH3n0Rnz6KpCmT0e2KWYJC', '5678'),
-    ('eeee3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Ana Martínez', 'EMP-003', '$2b$10$7vHxzJhEVYv8jMXcJZz8X.gvYQHLZMy8Xr1vTnZ6KpCmT0e2KWYJC', '9012')
+INSERT INTO employees (id, company_id, full_name, employee_code, access_pin_hash, updated_at) VALUES
+    ('eeee1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'María García', 'EMP-001', '$2b$10$zTDBhTuIHNVttrxUybv83eNxLX94TwarzUAiXSonUpkOdg24/4BoO', NOW()),
+    ('eeee2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Pedro López', 'EMP-002', '$2b$10$NGeW8u3K/f.8d6OtQhbPounOSONGTeq3GkQW58jkOWMiSm78Zzpzq', NOW()),
+    ('eeee3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Ana Martínez', 'EMP-003', '$2b$10$9fQdq566DoLXSPZ19o5CDuGryzu1/nZflNgn67uiR.iiRCeYhMiXu', NOW())
 ON CONFLICT DO NOTHING;
 
 -- Assign employees to areas
-INSERT INTO employee_areas (employee_id, area_id) VALUES
-    ('eeee1111-1111-1111-1111-111111111111', 'aaaa1111-1111-1111-1111-111111111111'),
-    ('eeee2222-2222-2222-2222-222222222222', 'aaaa3333-3333-3333-3333-333333333333'),
-    ('eeee3333-3333-3333-3333-333333333333', 'aaaa2222-2222-2222-2222-222222222222')
+INSERT INTO employee_areas (employee_id, area_id, updated_at) VALUES
+    ('eeee1111-1111-1111-1111-111111111111', 'aaaa1111-1111-1111-1111-111111111111', NOW()),
+    ('eeee2222-2222-2222-2222-222222222222', 'aaaa3333-3333-3333-3333-333333333333', NOW()),
+    ('eeee3333-3333-3333-3333-333333333333', 'aaaa2222-2222-2222-2222-222222222222', NOW())
 ON CONFLICT DO NOTHING;
 
 -- Insert catalog items
 INSERT INTO catalog_items (id, company_id, name, category, icon_ref, unit) VALUES
-    ('iiii1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Sábanas', 'Ropa de Cama', 'bed', 'piece'),
-    ('iiii2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Toallas', 'Baño', 'bath', 'piece'),
-    ('iiii3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Almohadas', 'Ropa de Cama', 'pillow', 'piece'),
-    ('iiii4444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'Edredones', 'Ropa de Cama', 'blanket', 'piece')
+    ('bbbb1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Sábanas', 'Ropa de Cama', 'bed', 'piece'),
+    ('bbbb2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Toallas', 'Baño', 'bath', 'piece'),
+    ('bbbb3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Almohadas', 'Ropa de Cama', 'pillow', 'piece'),
+    ('bbbb4444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'Edredones', 'Ropa de Cama', 'blanket', 'piece')
 ON CONFLICT DO NOTHING;
 
 -- Done

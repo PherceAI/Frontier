@@ -13,17 +13,13 @@ Frontier es una plataforma dual para operaciones hoteleras:
 
 ---
 
-## 🏗️ Arquitectura
+## 🏗️ Arquitectura (Next.js Full-Stack)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      FRONTEND                                │
+│                      FRONTEND & API                          │
 │                    Next.js 16 + React                        │
 │                  (http://localhost:3000)                     │
-├─────────────────────────────────────────────────────────────┤
-│                         API                                  │
-│                      Laravel 11                              │
-│                  (http://localhost:8000)                     │
 ├─────────────────────────────────────────────────────────────┤
 │                      DATABASE                                │
 │                    PostgreSQL 16                             │
@@ -33,38 +29,33 @@ Frontier es una plataforma dual para operaciones hoteleras:
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Automático)
 
-### Pre-requisitos
-- Docker Desktop instalado y corriendo
-- Node.js 18+ (para el frontend)
+### Windows
 
-### 1. Clonar e iniciar los servicios
+Ejecuta el script de inicio limpio. Esto levantará Docker para la base de datos, instalará dependencias, migrará el esquema y arrancará el proyecto completo.
 
 ```powershell
-# Clonar el repositorio
-git clone <repo-url>
-cd Frontier
-
-# Iniciar PostgreSQL + Laravel
-docker compose up -d
+.\start_dev.cmd
 ```
 
-### 2. Iniciar el frontend
+### Manual
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+Si prefieres paso a paso:
 
-### 3. Acceder a la aplicación
+1. **Base de Datos (Docker)**
+   ```powershell
+   docker compose up -d postgres pgadmin
+   ```
 
-| Servicio | URL | Credenciales |
-|----------|-----|--------------|
-| **Frontend** | http://localhost:3000 | - |
-| **API** | http://localhost:8000/api | - |
-| **pgAdmin** | http://localhost:5050 | admin@frontier.local / admin |
+2. **Frontend (Next.js Full-Stack)**
+   ```powershell
+   cd frontend
+   npm install
+   npx prisma generate
+   npx prisma db push
+   npm run dev
+   ```
 
 ---
 
@@ -79,6 +70,7 @@ npm run dev
 |--------|------|-----|
 | María García | Pisos | 1234 |
 | Pedro Martínez | Lavandería | 5678 |
+| Ana Martínez | Mantenimiento | 9012 |
 
 ---
 
@@ -86,79 +78,41 @@ npm run dev
 
 ```
 Frontier/
-├── backend-laravel/     # API Backend (Laravel + PHP)
-│   ├── app/
-│   │   ├── Http/Controllers/Api/
-│   │   ├── Models/
-│   │   └── Middleware/
-│   ├── routes/api.php
-│   └── docker-compose.dev.yml
-│
-├── frontend/            # Web App (Next.js + React)
+├── frontend/            # Web App (Next.js App Router for UI & APIs)
+│   ├── prisma/          # Database ORM schema
+│   │   └── schema.prisma
 │   ├── src/
 │   │   ├── app/
+│   │   │   ├── api/     # Backend Routes
 │   │   │   ├── tower/   # Admin interface
 │   │   │   └── hands/   # Worker interface
 │   │   ├── components/
-│   │   └── lib/api.ts
+│   │   └── lib/         # Shared helpers and server DB setup
 │   └── package.json
 │
-├── Proyecto Arquitectura/  # Documentación
-│   ├── PRD.md
-│   ├── DATABASE_SCHEMA.md
-│   ├── API_SPECIFICATION.md
-│   └── ...
-│
-├── docker-compose.yml   # Orquestación principal
-└── .env                 # Variables de entorno
+└── docker-compose.yml   # Base de datos y servicios locales
 ```
 
 ---
 
 ## 🛠️ Comandos Útiles
 
-### Docker
-
-```powershell
-# Iniciar todo (PostgreSQL + pgAdmin + Laravel)
-docker compose up -d
-
-# Ver logs de Laravel
-docker compose logs -f laravel
-
-# Reiniciar Laravel
-docker compose restart laravel
-
-# Parar todo
-docker compose down
-```
-
-### Frontend
+### Desarrollo Frontend y Backend
 
 ```powershell
 cd frontend
 
-# Desarrollo
+# Desarrollo con hot-reload (UI y API)
 npm run dev
 
-# Build producción
+# Build para Producción
 npm run build
 
-# Lint
-npm run lint
-```
+# Prisma Studio (ver datos UI)
+npx prisma studio
 
-### Artisan (Laravel)
-
-```powershell
-# Ejecutar comandos artisan dentro del contenedor
-docker compose exec laravel php artisan <comando>
-
-# Limpiar cache
-docker compose exec laravel php artisan cache:clear
-
-# Ver rutas
-docker compose exec laravel php artisan route:list
+# Actualizar base de datos tras cambio en schema.prisma
+npx prisma db push
 ```
 
 ---
@@ -168,9 +122,9 @@ docker compose exec laravel php artisan route:list
 | Capa | Tecnología |
 |------|------------|
 | **Frontend** | Next.js 16, React 19, TanStack Query, Tailwind CSS, Shadcn/ui |
-| **Backend** | Laravel 11, PHP 8.3, Eloquent ORM |
+| **Backend** | API Routes (Next.js), TypeScript, Prisma ORM |
 | **Database** | PostgreSQL 16 |
-| **Infraestructura** | Docker, Docker Compose |
+| **Infraestructura** | Docker (DB), Node.js (App) |
 
 ---
 

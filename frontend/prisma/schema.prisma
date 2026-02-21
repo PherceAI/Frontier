@@ -1,0 +1,255 @@
+// Frontier - Prisma Schema
+// Translated 1:1 from Laravel migrations (10 migration files)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── IDENTITY ──────────────────────────────────────────────────────────────
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  code      String   @unique @db.VarChar(10)
+  is_active Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users            User[]
+  employees        Employee[]
+  operationalAreas OperationalArea[]
+  catalogItems     CatalogItem[]
+  operationalEvents OperationalEvent[]
+  tasks            Task[]
+  taskTemplates    TaskTemplate[]
+
+  @@index([code])
+  @@map("companies")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  company_id   String   @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  password_hash String  @db.VarChar(255)
+  full_name    String   @db.VarChar(100)
+  role         UserRole
+  is_active    Boolean  @default(true)
+  remember_token String? @db.VarChar(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  company      Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  assignedTasks Task[]  @relation("TaskAssignedBy")
+
+  @@index([company_id])
+  @@map("users")
+}
+
+enum UserRole {
+  OWNER
+  MANAGER
+}
+
+model Employee {
+  id               String   @id @default(uuid()) @db.Uuid
+  company_id       String   @db.Uuid
+  full_name        String   @db.VarChar(100)
+  employee_code    String   @db.VarChar(20)
+  access_pin_hash  String   @db.VarChar(255)
+  is_active        Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  company          Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  areas            EmployeeArea[]
+  sessions         EmployeeSession[]
+  operationalEvents OperationalEvent[]
+  assignedTasks    Task[]   @relation("TaskAssignedTo")
+
+  @@unique([company_id, employee_code])
+  @@index([company_id])
+  @@map("employees")
+}
+
+model OperationalArea {
+  id          String      @id @default(uuid()) @db.Uuid
+  company_id  String      @db.Uuid
+  name        String      @db.VarChar(100)
+  type        AreaType
+  description String?
+  is_active   Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  company     Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  employees   EmployeeArea[]
+  events      OperationalEvent[]
+  tasks       Task[]
+  taskTemplates TaskTemplate[]
+
+  @@index([company_id])
+  @@map("operational_areas")
+}
+
+enum AreaType {
+  SOURCE
+  PROCESSOR
+}
+
+model EmployeeArea {
+  id          Int      @id @default(autoincrement())
+  employee_id String   @db.Uuid
+  area_id     String   @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  employee    Employee         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  area        OperationalArea  @relation(fields: [area_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, area_id])
+  @@map("employee_areas")
+}
+
+model EmployeeSession {
+  id                 String    @id @default(uuid()) @db.Uuid
+  employee_id        String    @db.Uuid
+  token_hash         String    @db.VarChar(255)
+  device_fingerprint String?   @db.VarChar(255)
+  is_active          Boolean   @default(true)
+  expires_at         DateTime
+  last_activity      DateTime  @default(now())
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  employee           Employee  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  events             OperationalEvent[]
+
+  @@index([employee_id])
+  @@map("employee_sessions")
+}
+
+// ─── OPERATIONAL ───────────────────────────────────────────────────────────
+
+model CatalogItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  company_id String   @db.Uuid
+  name       String   @db.VarChar(100)
+  category   String   @db.VarChar(50)
+  icon_ref   String?  @db.VarChar(50)
+  unit       String   @default("pcs") @db.VarChar(20)
+  is_active  Boolean  @default(true)
+  // laundry config fields (added via migration)
+  wash_temp  Int?
+  cycle_minutes Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company    Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  eventDetails EventDetail[]
+
+  @@map("catalog_items")
+}
+
+model OperationalEvent {
+  id          String          @id @default(uuid()) @db.Uuid
+  company_id  String          @db.Uuid
+  employee_id String          @db.Uuid
+  area_id     String          @db.Uuid
+  session_id  String?         @db.Uuid
+  event_type  String          @db.VarChar(50)
+  timestamp   DateTime        @default(now())
+  notes       String?
+
+  company     Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  employee    Employee        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  area        OperationalArea @relation(fields: [area_id], references: [id], onDelete: Cascade)
+  session     EmployeeSession? @relation(fields: [session_id], references: [id], onDelete: SetNull)
+  details     EventDetail[]
+
+  @@map("operational_events")
+}
+
+model EventDetail {
+  id       Int     @id @default(autoincrement())
+  event_id String  @db.Uuid
+  item_id  String? @db.Uuid
+  quantity Int     @default(0)
+  metadata Json?
+
+  event    OperationalEvent @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  item     CatalogItem?     @relation(fields: [item_id], references: [id], onDelete: SetNull)
+
+  @@map("event_details")
+}
+
+// ─── TASKS ─────────────────────────────────────────────────────────────────
+
+model TaskTemplate {
+  id                String   @id @default(uuid()) @db.Uuid
+  company_id        String   @db.Uuid
+  title             String   @db.VarChar(200)
+  description       String?
+  area_id           String?  @db.Uuid
+  priority          Int      @default(2) @db.SmallInt
+  estimated_minutes Int?
+  recurrence_rule   String?  @db.VarChar(100)
+  checklist_template Json?
+  is_active         Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  company   Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  area      OperationalArea? @relation(fields: [area_id], references: [id], onDelete: SetNull)
+  tasks     Task[]
+
+  @@index([company_id, is_active])
+  @@map("task_templates")
+}
+
+model Task {
+  id               String    @id @default(uuid()) @db.Uuid
+  company_id       String    @db.Uuid
+  template_id      String?   @db.Uuid
+  title            String    @db.VarChar(200)
+  description      String?
+  area_id          String?   @db.Uuid
+  assigned_to      String?   @db.Uuid
+  assigned_by      String?   @db.Uuid
+  status           String    @default("PENDING") @db.VarChar(20)
+  priority         Int       @default(2) @db.SmallInt
+  due_date         DateTime? @db.Date
+  due_time         DateTime? @db.Time(0)
+  started_at       DateTime?
+  completed_at     DateTime?
+  completion_notes String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  company       Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  template      TaskTemplate?   @relation(fields: [template_id], references: [id], onDelete: SetNull)
+  area          OperationalArea? @relation(fields: [area_id], references: [id], onDelete: SetNull)
+  assignee      Employee?       @relation("TaskAssignedTo", fields: [assigned_to], references: [id], onDelete: SetNull)
+  assigner      User?           @relation("TaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
+  checklistItems TaskChecklistItem[]
+
+  @@index([assigned_to, status, due_date])
+  @@index([company_id, area_id, status])
+  @@index([company_id, status, due_date])
+  @@map("tasks")
+}
+
+model TaskChecklistItem {
+  id           Int       @id @default(autoincrement())
+  task_id      String    @db.Uuid
+  label        String    @db.VarChar(255)
+  is_required  Boolean   @default(false)
+  is_completed Boolean   @default(false)
+  completed_at DateTime?
+  sort_order   Int       @default(0) @db.SmallInt
+
+  task         Task      @relation(fields: [task_id], references: [id], onDelete: Cascade)
+
+  @@map("task_checklist_items")
+}

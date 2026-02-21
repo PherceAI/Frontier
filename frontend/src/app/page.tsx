@@ -10,6 +10,7 @@ export default function Home() {
   const [time, setTime] = useState<string>('');
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const updateTime = () => setTime(new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }));
     updateTime();

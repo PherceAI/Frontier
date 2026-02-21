@@ -21,16 +21,39 @@ export interface OperationEventResponse {
 }
 
 export interface LaundryStatusResponse {
-    collections: {
+    message?: string;
+    summary?: string;
+    // New grouped format
+    cycles?: LaundryCycleGroup[];
+    // Legacy support if needed, or mapped from cycles
+    collections?: {
         id: string;
         name: string;
-        total: number; // Sum from DB
+        total: number;
+    }[];
+    history?: any[];
+}
+
+export interface LaundryCycleGroup {
+    group: string; // 'Juegos de Sábanas'
+    type: string; // 'BEDDING'
+    total_pieces: number;
+    full_cycles: number;
+    remainder: number;
+    capacity: number;
+    items: {
+        id: string;
+        name: string;
+        qty: number;
     }[];
 }
 
 export interface PendingWorkResponse {
     totalPending: number;
-    byItem: {
+    cycles?: LaundryCycleGroup[];
+    // Legacy flat list might still be sent for other areas
+    byItem?: {
+        id: string;
         name: string;
         icon: string;
         pending: number;

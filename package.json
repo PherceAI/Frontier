@@ -1,0 +1,17 @@
+{
+  "name": "frontier",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "db:up": "docker compose up -d postgres pgadmin",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d postgres pgadmin",
+    "prisma:generate": "cd frontend && npx prisma generate",
+    "prisma:migrate": "cd frontend && npx prisma migrate dev",
+    "prisma:studio": "cd frontend && npx prisma studio",
+    "tunnel": "cloudflared tunnel run"
+  }
+}

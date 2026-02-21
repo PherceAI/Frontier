@@ -102,15 +102,19 @@ export function TowerSidebar() {
                     </div>
                     <SidebarMenu className="space-y-1">
                         <SidebarMenuItem>
-                            <SidebarMenuButton className="h-10 rounded-lg px-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors duration-200">
-                                <Settings className="h-4.5 w-4.5 text-slate-400" />
-                                <span className="text-sm">Configuración</span>
+                            <SidebarMenuButton asChild className="h-10 rounded-lg px-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors duration-200">
+                                <Link href="/tower/config" className="flex items-center gap-3 w-full">
+                                    <Settings className="h-4.5 w-4.5 text-slate-400" />
+                                    <span className="text-sm">Configuración</span>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton className="h-10 rounded-lg px-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors duration-200">
-                                <HelpCircle className="h-4.5 w-4.5 text-slate-400" />
-                                <span className="text-sm">Ayuda</span>
+                            <SidebarMenuButton asChild className="h-10 rounded-lg px-3 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors duration-200">
+                                <Link href="#" className="flex items-center gap-3 w-full">
+                                    <HelpCircle className="h-4.5 w-4.5 text-slate-400" />
+                                    <span className="text-sm">Ayuda</span>
+                                </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>

@@ -56,9 +56,26 @@ export default function EmployeesPage() {
                 configApi.employees.list(),
                 configApi.areas.list({ isActive: 'true' })
             ]);
-            // API now returns full response object { data: [], pagination: {} }
-            setEmployees(empResponse?.data || []);
-            setAreas(areaResponse?.data || []);
+            // Map API response to match UI interfaces
+            const rawEmployees = empResponse?.data || [];
+            const rawAreas = areaResponse?.data || [];
+
+            const mappedEmployees: Employee[] = rawEmployees.map((e: any) => ({
+                id: e.id,
+                fullName: e.full_name || e.fullName || '',
+                employeeCode: e.employee_code || e.employeeCode || '',
+                isActive: e.is_active ?? e.isActive ?? true,
+                areas: e.areas?.map((a: any) => a.area || a) || [],
+            }));
+
+            const mappedAreas: Area[] = rawAreas.map((a: any) => ({
+                id: a.id,
+                name: a.name || '',
+                isActive: a.is_active ?? a.isActive ?? true,
+            }));
+
+            setEmployees(mappedEmployees);
+            setAreas(mappedAreas);
         } catch (error) {
             console.error('Error loading data:', error);
             toast.error('Error al cargar datos');
@@ -198,6 +215,7 @@ export default function EmployeesPage() {
     };
 
     const filteredEmployees = employees.filter(emp => {
+        if (!emp.isActive) return false;
         // Safety check for null/undefined strings
         const nameMatch = emp.fullName?.toLowerCase().includes(search.toLowerCase()) ?? false;
         const codeMatch = emp.employeeCode?.toLowerCase().includes(search.toLowerCase()) ?? false;

@@ -77,6 +77,7 @@ export default function TowerTasksPage() {
     }, [fetchTasks]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchTasks();
     }, [filterStatus, filterArea, filterEmployee, filterDate, fetchTasks]);
 

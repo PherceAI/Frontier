@@ -20,6 +20,7 @@ export default function ProtectedTowerLayout({
         if (!token) {
             router.replace('/tower/login');
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsAuthorized(true);
         }
     }, [router]);

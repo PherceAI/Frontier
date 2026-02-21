@@ -1,5 +1,5 @@
-// Use environment variable for flexibility, default to localhost for dev
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// Same-origin API routes (no external backend needed)
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 interface RequestOptions extends RequestInit {
     token?: string;
@@ -44,21 +44,25 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
         if (!response.ok) {
             // Handle 401 Unauthorized globally
             if (response.status === 401 && typeof window !== 'undefined') {
-                console.warn('[API] Session expired or invalid. Redirecting to login.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('sessionToken');
+                // Skip redirect for login endpoints — a failed login should NOT clear existing sessions
+                const isLoginEndpoint = endpoint.includes('/auth/pin/login') || endpoint.includes('/auth/admin/login');
+                if (!isLoginEndpoint) {
+                    console.warn('[API] Session expired or invalid. Redirecting to login.');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('sessionToken');
+                    localStorage.removeItem('employee');
 
-                const currentPath = window.location.pathname;
-                if (currentPath.startsWith('/tower')) {
-                    window.location.href = '/tower/login';
-                } else if (currentPath.startsWith('/hands')) {
-                    window.location.href = '/hands';
-                } else {
-                    window.location.href = '/';
+                    const currentPath = window.location.pathname;
+                    if (currentPath.startsWith('/tower')) {
+                        window.location.href = '/tower/login';
+                    } else if (currentPath.startsWith('/hands')) {
+                        window.location.href = '/hands';
+                    } else {
+                        window.location.href = '/';
+                    }
+
+                    throw new Error('Sesión expirada. Redirigiendo...');
                 }
-
-                // Stop execution to avoid further error handling
-                throw new Error('Sesión expirada. Redirigiendo...');
             }
 
             // Standardize error object
@@ -218,6 +222,10 @@ export const operationsApi = {
         }
     },
     housekeeping: {
+        status: async () => {
+            const res = await apiRequest<{ data: any }>('/operations/housekeeping/status');
+            return res.data;
+        },
         log: async (payload: HousekeepingLogPayload) => {
             const res = await apiRequest<{ data: OperationEventResponse }>('/operations/housekeeping/log', {
                 method: 'POST',
@@ -231,10 +239,30 @@ export const operationsApi = {
             const res = await apiRequest<{ data: LaundryStatusResponse }>('/operations/laundry/status');
             return res.data;
         },
-        log: async (payload: { cycles: number, items?: { item_id: string, quantity: number }[] }) => {
+        log: async (payload: { cycles: number, items?: { item_id: string, quantity: number }[], notes?: string }) => {
             const res = await apiRequest<{ data: { eventId: string } }>('/operations/laundry/log', {
                 method: 'POST',
                 body: JSON.stringify(payload)
+            });
+            return res.data;
+        }
+    },
+    tasks: {
+        listMyTasks: async () => {
+            const res = await apiRequest<{ data: any[] }>('/operations/tasks');
+            return res.data;
+        },
+        toggleItem: async (taskId: string, itemId: number, isCompleted: boolean) => {
+            const res = await apiRequest<any>(`/operations/tasks/${taskId}/items/${itemId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ is_completed: isCompleted })
+            });
+            return res.data;
+        },
+        updateStatus: async (taskId: string, status: string) => {
+            const res = await apiRequest<any>(`/operations/tasks/${taskId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status })
             });
             return res.data;
         }
@@ -243,7 +271,7 @@ export const operationsApi = {
 
 export const erpApi = {
     getRooms: async () => {
-        const res = await apiRequest<any>('/dashboard/erp/ocupacion');
+        const res = await apiRequest<any>('/rooms');
         // Handle both { data: [...] } and directly [...]
         return Array.isArray(res) ? res : (res?.data || []);
     }

@@ -1,0 +1,32 @@
+﻿
+============================================================
+  SEO CHECKER - Search Engine Optimization Audit
+============================================================
+Project: C:\Users\WinUserX\Pictures\Frontier
+Time: 2026-02-19 18:29:04
+------------------------------------------------------------
+Found 17 page files to analyze
+
+============================================================
+SEO ANALYSIS RESULTS
+============================================================
+
+Issue Summary:
+  [4] Missing meta description
+  [4] Missing Open Graph tags
+  [3] Missing <title> tag
+
+Affected files (4):
+  - page.tsx
+  - layout.tsx
+  - page.tsx
+  - page.tsx
+
+{
+  "script": "seo_checker",
+  "project": "C:\\Users\\WinUserX\\Pictures\\Frontier",
+  "files_checked": 17,
+  "files_with_issues": 4,
+  "issues_found": 11,
+  "passed": false
+}

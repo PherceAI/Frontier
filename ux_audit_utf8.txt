@@ -1,0 +1,29 @@
+﻿
+[UX AUDIT] 36 files checked
+--------------------------------------------------
+[!] ISSUES (7):
+  - [Cognitive Load] globals.css: Form inputs without labels. Use <label> for accessibility and clarity.
+  - [Color] globals.css: PURPLE DETECTED ('purple'). Banned by Maestro rules. Use Teal/Cyan/Emerald instead.
+  - [Cognitive Load] page.tsx: Form inputs without labels. Use <label> for accessibility and clarity.
+  - [Cognitive Load] page.tsx: Form inputs without labels. Use <label> for accessibility and clarity.
+  - [Cognitive Load] page.tsx: Form inputs without labels. Use <label> for accessibility and clarity.
+  - [Cognitive Load] RoomCard.tsx: Form inputs without labels. Use <label> for accessibility and clarity.
+  - [Cognitive Load] card.tsx: Form inputs without labels. Use <label> for accessibility and clarity.
+[*] WARNINGS (203):
+  - [Trust] globals.css: Form without security indicators. Add 'SSL Secure' or lock icon.
+  - [Color] globals.css: Color variables without HSL. Consider HSL for easier palette adjustment (Hue, Saturation, Lightness).
+  - [Reflective] layout.tsx: Long-form content without brand story/values. Add 'About' or 'Why We Exist' section.
+  - [Trust] layout.tsx: No social proof detected. Consider adding testimonials, ratings, or 'Trusted by' logos.
+  - [Typography] layout.tsx: No line length constraint (45-75ch). Use max-w-prose or max-w-[65ch].
+  - [Typography] layout.tsx: Text elements found without line-height. Body: 1.4-1.6, Headings: 1.1-1.3
+  - [Visual] layout.tsx: Flat design with no depth. Consider shadows or subtle gradients for hierarchy.
+  - [Fitts' Law] page.tsx: Small targets (< 44px)
+  - [Reflective] page.tsx: Long-form content without brand story/values. Add 'About' or 'Why We Exist' section.
+  - [Trust] page.tsx: Footer lacks authority signals. Add certifications, awards, or media mentions.
+  - [Typography] page.tsx: No line length constraint (45-75ch). Use max-w-prose or max-w-[65ch].
+  - [Typography] page.tsx: Fixed font sizes without clamp(). Consider fluid typography: clamp(MIN, PREFERRED, MAX)
+  - [Visual] page.tsx: Flat design with no depth. Consider shadows or subtle gradients for hierarchy.
+  - [Color] page.tsx: Possible low-contrast combination detected. Verify WCAG AA (4.5:1 for text).
+  - [Color] layout.tsx: Possible low-contrast combination detected. Verify WCAG AA (4.5:1 for text).
+[+] PASSED CHECKS: 14
+STATUS: FAIL

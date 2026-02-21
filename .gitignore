@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-vendor/
 .pnp
 .pnp.js
 
@@ -37,13 +36,3 @@ pgadmin_data/
 # Testing
 coverage/
 .nyc_output/
-
-# Laravel specific
-backend-laravel/vendor/
-backend-laravel/storage/logs/*
-backend-laravel/storage/framework/cache/*
-backend-laravel/storage/framework/sessions/*
-backend-laravel/storage/framework/views/*
-backend-laravel/bootstrap/cache/*
-!backend-laravel/storage/logs/.gitkeep
-!backend-laravel/storage/framework/cache/.gitkeep

@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/api';
+import { LaundryCycleGroup } from '@/types/operations';
 
 export interface CatalogItem {
     id: string;
@@ -24,7 +25,7 @@ export interface OperationsService {
     submitHousekeepingLog: (logs: { item_id: string; quantity: number }[], notes?: string) => Promise<any>;
 
     // Laundry
-    getLaundryStatus: () => Promise<{ success: boolean; data: { collections: any[]; history: any[] } }>;
+    getLaundryStatus: () => Promise<{ success: boolean; data: { collections: any[]; history: any[]; cycles: LaundryCycleGroup[]; totalPending: number } }>;
     submitLaundryLog: (cycles: number, items: { item_id: string; quantity: number }[], notes?: string) => Promise<any>;
 
     // Tasks

@@ -135,8 +135,8 @@ export default function AreasPage() {
                                                 <Package className="w-5 h-5" />
                                             </div>
                                             <div className="text-center">
-                                                <span className="text-sm font-bold block">Pisos / Habitaciones</span>
-                                                <span className="text-[10px] opacity-70">Lógica de Camareras (Recolección)</span>
+                                                <span className="text-sm font-bold block">Origen (Demanda)</span>
+                                                <span className="text-[10px] opacity-70">Camareras, Limpieza</span>
                                             </div>
                                         </button>
                                         <button
@@ -151,8 +151,8 @@ export default function AreasPage() {
                                                 <Activity className="w-5 h-5" />
                                             </div>
                                             <div className="text-center">
-                                                <span className="text-sm font-bold block">Lavandería</span>
-                                                <span className="text-[10px] opacity-70">Lógica de Lavado (Ciclos)</span>
+                                                <span className="text-sm font-bold block">Operación (Suministro)</span>
+                                                <span className="text-[10px] opacity-70">Lavandería, Cocina</span>
                                             </div>
                                         </button>
                                     </div>
@@ -241,7 +241,7 @@ export default function AreasPage() {
                                         ? 'bg-blue-100 text-blue-700'
                                         : 'bg-indigo-100 text-indigo-700'
                                         }`}>
-                                        {area.type === 'SOURCE' ? 'Pisos' : 'Lavandería'}
+                                        {area.type === 'SOURCE' ? 'ORIGEN' : 'OPERACIÓN'}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
