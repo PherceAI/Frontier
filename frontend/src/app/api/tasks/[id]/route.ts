@@ -33,6 +33,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
-    await prisma.task.update({ where: { id }, data: { status: 'CANCELLED' } });
-    return NextResponse.json({ success: true, data: { message: 'Tarea cancelada' } });
+    await prisma.task.findFirstOrThrow({ where: { id, company_id: user.company_id } });
+    await prisma.task.delete({ where: { id } });
+    return NextResponse.json({ success: true, data: { message: 'Tarea eliminada' } });
 }

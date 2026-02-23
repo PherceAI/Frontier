@@ -247,6 +247,7 @@ model TaskChecklistItem {
   is_required  Boolean   @default(false)
   is_completed Boolean   @default(false)
   completed_at DateTime?
+  evidence_url String?   @db.Text
   sort_order   Int       @default(0) @db.SmallInt
 
   task         Task      @relation(fields: [task_id], references: [id], onDelete: Cascade)

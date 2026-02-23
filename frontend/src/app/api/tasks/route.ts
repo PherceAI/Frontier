@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
 
     const task = await prisma.task.create({
         data: {
-            ...rest, company_id: user.company_id, assigned_by: user.id,
+            ...rest,
+            due_date: rest.due_date ? new Date(rest.due_date) : undefined,
+            due_time: rest.due_time ? new Date(`1970-01-01T${rest.due_time}:00Z`) : undefined,
+            company_id: user.company_id, assigned_by: user.id,
             status: 'PENDING', priority: rest.priority ?? 2,
             template_id: template_id ?? null, area_id: rest.area_id ?? templateAreaId,
             checklistItems: {

@@ -10,6 +10,7 @@ export interface TaskChecklistItem {
     is_required: boolean;
     is_completed: boolean;
     completed_at: string | null;
+    evidence_url?: string | null;
     sort_order: number;
 }
 

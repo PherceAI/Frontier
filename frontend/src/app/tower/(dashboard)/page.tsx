@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
-import { Activity, AlertCircle, CheckCircle2, Package, Users, TrendingUp, Calendar, MoreHorizontal, ArrowUpRight, ArrowDownRight, BookOpen, Info } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, Package, Users, TrendingUp, Calendar, MoreHorizontal, ArrowUpRight, ArrowDownRight, BookOpen, Info, Sparkles } from 'lucide-react';
 
 export default function TowerDashboard() {
     const { data: bottleneck, isLoading: bottleneckLoading } = useQuery({
@@ -210,22 +210,27 @@ export default function TowerDashboard() {
                                 {activities?.map((activity: any) => (
                                     <div key={activity.id} className="p-6 hover:bg-slate-50/80 transition-colors flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${activity.eventType === 'DEMAND' ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${activity.eventType === 'DEMAND' ? 'bg-indigo-50 text-indigo-600' : activity.eventType === 'LIMPIEZA' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
                                                 }`}>
-                                                {activity.eventType === 'DEMAND' ? <TrendingUp className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                                                {activity.eventType === 'DEMAND' ? <TrendingUp className="w-5 h-5" /> : activity.eventType === 'LIMPIEZA' ? <Sparkles className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-slate-900">
-                                                    {activity.employee} <span className="font-normal text-slate-500">{activity.eventType === 'DEMAND' ? 'solicitó' : 'procesó'} items</span>
+                                                    {activity.employee} <span className="font-normal text-slate-500">{activity.eventType === 'LIMPIEZA' ? 'realizó una limpieza' : activity.eventType === 'DEMAND' ? 'solicitó items' : 'procesó items'}</span>
                                                 </p>
                                                 <p className="text-xs text-slate-400 font-medium mt-0.5">
                                                     {activity.area} &bull; {new Date(activity.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                                 </p>
+                                                {activity.eventType === 'LIMPIEZA' && activity.notes && (
+                                                    <p className="text-xs text-slate-500 mt-1 italic">"{activity.notes}"</p>
+                                                )}
                                             </div>
                                         </div>
-                                        <Badge variant="secondary" className="bg-white border border-slate-200 text-slate-600 ml-4 whitespace-nowrap">
-                                            {activity.totalItems} items
-                                        </Badge>
+                                        {activity.eventType !== 'LIMPIEZA' && (
+                                            <Badge variant="secondary" className="bg-white border border-slate-200 text-slate-600 ml-4 whitespace-nowrap">
+                                                {activity.totalItems} items
+                                            </Badge>
+                                        )}
                                     </div>
                                 ))}
                             </div>

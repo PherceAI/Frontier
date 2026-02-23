@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const event = await prisma.operationalEvent.create({
         data: {
             id: randomUUID(), company_id: auth.employee.company_id, employee_id: auth.employee.id,
-            area_id: ea.area.id, session_id: auth.session.id, event_type: 'COLLECTION', notes: notes ?? null,
+            area_id: ea.area.id, session_id: auth.session.id, event_type: 'LIMPIEZA', notes: notes ?? null,
             details: { create: items.map((item: { item_id?: string; quantity?: number; metadata?: unknown }) => ({ item_id: item.item_id ?? null, quantity: item.quantity ?? 0, metadata: item.metadata ?? null })) },
         },
     });

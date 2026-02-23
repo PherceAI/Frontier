@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const to = searchParams.get('to');
 
     if (areaId) where.area_id = areaId;
-    if (eventType && ['COLLECTION', 'WASH_CYCLE', 'CORRECTION'].includes(eventType)) {
+    if (eventType && ['COLLECTION', 'WASH_CYCLE', 'CORRECTION', 'LIMPIEZA', 'CLEANING', 'IN_PROGRESS', 'COMPLETED', 'ROOM_CLEANING'].includes(eventType)) {
         where.event_type = eventType;
     }
     if (from || to) {
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         employee: e.employee?.full_name ?? 'Unknown',
         area: e.area?.name ?? 'Unknown',
         eventType: e.event_type,
+        notes: e.notes,
         totalItems: e.details.reduce((s, d) => s + d.quantity, 0),
         items: e.details.map((d) => ({ name: d.item?.name, quantity: d.quantity })),
     }));

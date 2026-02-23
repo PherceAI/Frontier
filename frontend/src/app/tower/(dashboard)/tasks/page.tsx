@@ -10,10 +10,10 @@ import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/types/tasks';
 import {
     ClipboardList, Plus, Filter, Calendar, Users, MapPin,
     Clock, CheckCircle2, AlertTriangle, X, ChevronDown,
-    Play, Eye, Trash2, BarChart3, ListChecks,
+    Play, Eye, Trash2, BarChart3, ListChecks, ExternalLink
 } from 'lucide-react';
 
-interface EmployeeOption { id: string; fullName: string; employeeCode: string }
+interface EmployeeOption { id: string; fullName: string; employeeCode: string; full_name?: string; employee_code?: string; }
 interface AreaOption { id: string; name: string; type: string }
 
 export default function TowerTasksPage() {
@@ -41,7 +41,7 @@ export default function TowerTasksPage() {
                 due_date: filterDate || undefined,
                 limit: 100,
             });
-            setTasks(res.data?.data || []);
+            setTasks((res.data as any) || []);
         } catch (err) {
             toast.error('Error al cargar tareas');
         }
@@ -160,7 +160,7 @@ export default function TowerTasksPage() {
                     </select>
                     <select value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Todos los empleados</option>
-                        {employees.map(e => <option key={e.id} value={e.id}>{e.fullName} ({e.employeeCode})</option>)}
+                        {employees.map(e => <option key={e.id} value={e.id}>{e.full_name || e.fullName} ({e.employee_code || e.employeeCode})</option>)}
                     </select>
                     <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                 </div>
@@ -253,7 +253,14 @@ export default function TowerTasksPage() {
                                                     </span>
                                                 ) : <span className="text-xs text-slate-400">—</span>}
                                             </td>
-                                            <td className="px-4 py-3.5 text-right">
+                                            <td className="px-4 py-3.5 text-right space-x-2">
+                                                <button
+                                                    onClick={() => setSelectedTask(task)}
+                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                                    title="Ver Detalle y Evidencia"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
                                                 <button
                                                     onClick={() => handleDelete(task.id)}
                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
@@ -281,6 +288,109 @@ export default function TowerTasksPage() {
                     onCreated={() => { setShowCreateModal(false); fetchTasks(); fetchStats(); }}
                 />
             )}
+
+            {/* View Task Modal */}
+            {selectedTask && (
+                <ViewTaskModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+            )}
+        </div>
+    );
+}
+
+// ─── View Task Modal ──────────────────
+function ViewTaskModal({ task, onClose }: { task: Task; onClose: () => void }) {
+    const statusCfg = STATUS_CONFIG[task.status];
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-6" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">{task.title}</h2>
+                        {task.description && <p className="text-sm text-slate-500 mt-1">{task.description}</p>}
+                    </div>
+                    <button onClick={onClose} className="p-2 -mr-2 -mt-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors shrink-0">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Metadata */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</span>
+                        <div className="mt-1">
+                            <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg ${statusCfg.color} ${statusCfg.bg}`}>
+                                {statusCfg.label}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Asignado a</span>
+                        <p className="mt-1 text-sm font-medium text-slate-900">{task.assignee?.full_name || 'Sin asignar'}</p>
+                    </div>
+                    <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Área</span>
+                        <p className="mt-1 text-sm font-medium text-slate-900">{task.area?.name || '---'}</p>
+                    </div>
+                    <div>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha Límite</span>
+                        <p className="mt-1 text-sm font-medium text-slate-900">
+                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : '---'} {task.due_time}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Checklist & Evidence */}
+                <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <ListChecks className="w-4 h-4 text-blue-600" />
+                        Checklist Operativo
+                    </h3>
+
+                    {(!task.checklist_items || task.checklist_items.length === 0) ? (
+                        <p className="text-sm text-slate-500 italic">Esta tarea no tiene checklist.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {task.checklist_items.map((item) => (
+                                <div key={item.id} className="flex items-start justify-between gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                    <div className="flex items-start gap-3 flex-1">
+                                        <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center border ${item.is_completed ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-slate-300'}`}>
+                                            {item.is_completed && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                        </div>
+                                        <div>
+                                            <p className={`text-sm font-medium ${item.is_completed ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
+                                                {item.label}
+                                            </p>
+                                            {item.is_required && !item.is_completed && <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block mt-1">Requerido</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* Evidence Link */}
+                                    {item.evidence_url && (
+                                        <a
+                                            href={item.evidence_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            Ver Foto
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Action */}
+                <div className="pt-2">
+                    <button onClick={onClose} className="w-full py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+                        Cerrar Detalles
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
@@ -421,7 +531,7 @@ function CreateTaskModal({ employees, areas, templates, onClose, onCreated }: {
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Asignar a</label>
                             <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900">
                                 <option value="">Sin asignar</option>
-                                {employees.map(e => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+                                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name || e.fullName}</option>)}
                             </select>
                         </div>
                         <div>
