@@ -19,31 +19,31 @@ model Company {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  users            User[]
-  employees        Employee[]
-  operationalAreas OperationalArea[]
-  catalogItems     CatalogItem[]
+  users             User[]
+  employees         Employee[]
+  operationalAreas  OperationalArea[]
+  catalogItems      CatalogItem[]
   operationalEvents OperationalEvent[]
-  tasks            Task[]
-  taskTemplates    TaskTemplate[]
+  tasks             Task[]
+  taskTemplates     TaskTemplate[]
 
   @@index([code])
   @@map("companies")
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  company_id   String   @db.Uuid
-  email        String   @unique @db.VarChar(255)
-  password_hash String  @db.VarChar(255)
-  full_name    String   @db.VarChar(100)
-  role         UserRole
-  is_active    Boolean  @default(true)
-  remember_token String? @db.VarChar(100)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  company_id     String   @db.Uuid
+  email          String   @unique @db.VarChar(255)
+  password_hash  String   @db.VarChar(255)
+  full_name      String   @db.VarChar(100)
+  role           UserRole
+  is_active      Boolean  @default(true)
+  remember_token String?  @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  company      Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  company       Company @relation(fields: [company_id], references: [id], onDelete: Cascade)
   assignedTasks Task[]  @relation("TaskAssignedBy")
 
   @@index([company_id])
@@ -56,20 +56,20 @@ enum UserRole {
 }
 
 model Employee {
-  id               String   @id @default(uuid()) @db.Uuid
-  company_id       String   @db.Uuid
-  full_name        String   @db.VarChar(100)
-  employee_code    String   @db.VarChar(20)
-  access_pin_hash  String   @db.VarChar(255)
-  is_active        Boolean  @default(true)
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  company_id      String   @db.Uuid
+  full_name       String   @db.VarChar(100)
+  employee_code   String   @db.VarChar(20)
+  access_pin_hash String   @db.VarChar(255)
+  is_active       Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  company          Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  areas            EmployeeArea[]
-  sessions         EmployeeSession[]
+  company           Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  areas             EmployeeArea[]
+  sessions          EmployeeSession[]
   operationalEvents OperationalEvent[]
-  assignedTasks    Task[]   @relation("TaskAssignedTo")
+  assignedTasks     Task[]             @relation("TaskAssignedTo")
 
   @@unique([company_id, employee_code])
   @@index([company_id])
@@ -77,18 +77,18 @@ model Employee {
 }
 
 model OperationalArea {
-  id          String      @id @default(uuid()) @db.Uuid
-  company_id  String      @db.Uuid
-  name        String      @db.VarChar(100)
+  id          String   @id @default(uuid()) @db.Uuid
+  company_id  String   @db.Uuid
+  name        String   @db.VarChar(100)
   type        AreaType
   description String?
-  is_active   Boolean     @default(true)
-  createdAt   DateTime    @default(now()) @map("created_at")
+  is_active   Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  company     Company     @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  employees   EmployeeArea[]
-  events      OperationalEvent[]
-  tasks       Task[]
+  company       Company            @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  employees     EmployeeArea[]
+  events        OperationalEvent[]
+  tasks         Task[]
   taskTemplates TaskTemplate[]
 
   @@index([company_id])
@@ -107,25 +107,25 @@ model EmployeeArea {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  employee    Employee         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  area        OperationalArea  @relation(fields: [area_id], references: [id], onDelete: Cascade)
+  employee Employee        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  area     OperationalArea @relation(fields: [area_id], references: [id], onDelete: Cascade)
 
   @@unique([employee_id, area_id])
   @@map("employee_areas")
 }
 
 model EmployeeSession {
-  id                 String    @id @default(uuid()) @db.Uuid
-  employee_id        String    @db.Uuid
-  token_hash         String    @db.VarChar(255)
-  device_fingerprint String?   @db.VarChar(255)
-  is_active          Boolean   @default(true)
+  id                 String   @id @default(uuid()) @db.Uuid
+  employee_id        String   @db.Uuid
+  token_hash         String   @db.VarChar(255)
+  device_fingerprint String?  @db.VarChar(255)
+  is_active          Boolean  @default(true)
   expires_at         DateTime
-  last_activity      DateTime  @default(now())
-  createdAt          DateTime  @default(now()) @map("created_at")
+  last_activity      DateTime @default(now())
+  createdAt          DateTime @default(now()) @map("created_at")
 
-  employee           Employee  @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  events             OperationalEvent[]
+  employee Employee           @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  events   OperationalEvent[]
 
   @@index([employee_id])
   @@map("employee_sessions")
@@ -134,40 +134,43 @@ model EmployeeSession {
 // ─── OPERATIONAL ───────────────────────────────────────────────────────────
 
 model CatalogItem {
-  id         String   @id @default(uuid()) @db.Uuid
-  company_id String   @db.Uuid
-  name       String   @db.VarChar(100)
-  category   String   @db.VarChar(50)
-  icon_ref   String?  @db.VarChar(50)
-  unit       String   @default("pcs") @db.VarChar(20)
-  is_active  Boolean  @default(true)
+  id            String   @id @default(uuid()) @db.Uuid
+  company_id    String   @db.Uuid
+  name          String   @db.VarChar(100)
+  category      String   @db.VarChar(50)
+  icon_ref      String?  @db.VarChar(50)
+  unit          String   @default("pcs") @db.VarChar(20)
+  is_active     Boolean  @default(true)
   // laundry config fields (added via migration)
-  wash_temp  Int?
+  wash_temp     Int?
   cycle_minutes Int?
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  company    Company  @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  company      Company       @relation(fields: [company_id], references: [id], onDelete: Cascade)
   eventDetails EventDetail[]
 
   @@map("catalog_items")
 }
 
 model OperationalEvent {
-  id          String          @id @default(uuid()) @db.Uuid
-  company_id  String          @db.Uuid
-  employee_id String          @db.Uuid
-  area_id     String          @db.Uuid
-  session_id  String?         @db.Uuid
-  event_type  String          @db.VarChar(50)
-  timestamp   DateTime        @default(now())
+  id          String   @id @default(uuid()) @db.Uuid
+  company_id  String   @db.Uuid
+  employee_id String   @db.Uuid
+  area_id     String   @db.Uuid
+  session_id  String?  @db.Uuid
+  event_type  String   @db.VarChar(50)
+  timestamp   DateTime @default(now())
   notes       String?
 
-  company     Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  employee    Employee        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  area        OperationalArea @relation(fields: [area_id], references: [id], onDelete: Cascade)
-  session     EmployeeSession? @relation(fields: [session_id], references: [id], onDelete: SetNull)
-  details     EventDetail[]
+  company  Company          @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  employee Employee         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  area     OperationalArea  @relation(fields: [area_id], references: [id], onDelete: Cascade)
+  session  EmployeeSession? @relation(fields: [session_id], references: [id], onDelete: SetNull)
+  details  EventDetail[]
 
+  @@index([company_id, timestamp])
+  @@index([area_id, timestamp])
+  @@index([employee_id, timestamp])
   @@map("operational_events")
 }
 
@@ -178,8 +181,8 @@ model EventDetail {
   quantity Int     @default(0)
   metadata Json?
 
-  event    OperationalEvent @relation(fields: [event_id], references: [id], onDelete: Cascade)
-  item     CatalogItem?     @relation(fields: [item_id], references: [id], onDelete: SetNull)
+  event OperationalEvent @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  item  CatalogItem?     @relation(fields: [item_id], references: [id], onDelete: SetNull)
 
   @@map("event_details")
 }
@@ -187,22 +190,22 @@ model EventDetail {
 // ─── TASKS ─────────────────────────────────────────────────────────────────
 
 model TaskTemplate {
-  id                String   @id @default(uuid()) @db.Uuid
-  company_id        String   @db.Uuid
-  title             String   @db.VarChar(200)
-  description       String?
-  area_id           String?  @db.Uuid
-  priority          Int      @default(2) @db.SmallInt
-  estimated_minutes Int?
-  recurrence_rule   String?  @db.VarChar(100)
+  id                 String   @id @default(uuid()) @db.Uuid
+  company_id         String   @db.Uuid
+  title              String   @db.VarChar(200)
+  description        String?
+  area_id            String?  @db.Uuid
+  priority           Int      @default(2) @db.SmallInt
+  estimated_minutes  Int?
+  recurrence_rule    String?  @db.VarChar(100)
   checklist_template Json?
-  is_active         Boolean  @default(true)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  is_active          Boolean  @default(true)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  company   Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  area      OperationalArea? @relation(fields: [area_id], references: [id], onDelete: SetNull)
-  tasks     Task[]
+  company Company          @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  area    OperationalArea? @relation(fields: [area_id], references: [id], onDelete: SetNull)
+  tasks   Task[]
 
   @@index([company_id, is_active])
   @@map("task_templates")
@@ -227,11 +230,11 @@ model Task {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  company       Company         @relation(fields: [company_id], references: [id], onDelete: Cascade)
-  template      TaskTemplate?   @relation(fields: [template_id], references: [id], onDelete: SetNull)
-  area          OperationalArea? @relation(fields: [area_id], references: [id], onDelete: SetNull)
-  assignee      Employee?       @relation("TaskAssignedTo", fields: [assigned_to], references: [id], onDelete: SetNull)
-  assigner      User?           @relation("TaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
+  company        Company             @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  template       TaskTemplate?       @relation(fields: [template_id], references: [id], onDelete: SetNull)
+  area           OperationalArea?    @relation(fields: [area_id], references: [id], onDelete: SetNull)
+  assignee       Employee?           @relation("TaskAssignedTo", fields: [assigned_to], references: [id], onDelete: SetNull)
+  assigner       User?               @relation("TaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
   checklistItems TaskChecklistItem[]
 
   @@index([assigned_to, status, due_date])
@@ -250,7 +253,7 @@ model TaskChecklistItem {
   evidence_url String?   @db.Text
   sort_order   Int       @default(0) @db.SmallInt
 
-  task         Task      @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [task_id], references: [id], onDelete: Cascade)
 
   @@map("task_checklist_items")
 }

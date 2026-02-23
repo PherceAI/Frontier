@@ -4,7 +4,7 @@ import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/hel
 
 export async function POST(request: NextRequest) {
     try {
-        const { pin } = await request.json();
+        const { pin, companyId } = await request.json();
         if (!pin) {
             return NextResponse.json(
                 { success: false, error: { code: 'VALIDATION', message: 'PIN requerido' } },
@@ -22,17 +22,14 @@ export async function POST(request: NextRequest) {
         //    (Note: This reduces security slightly against rainbow tables if the salt isn't managed carefully,
         //    but for 4-6 digit PINs, rainbow tables are trivial anyway. Rate limiting is more important).
         const employees = await prisma.employee.findMany({
-            where: { is_active: true },
+            where: { is_active: true, ...(companyId && { company_id: companyId }) },
             select: { id: true, access_pin_hash: true },
         });
 
-        let matchedEmployeeId: string | null = null;
-        for (const emp of employees) {
-            if (await comparePassword(pin, emp.access_pin_hash)) {
-                matchedEmployeeId = emp.id;
-                break;
-            }
-        }
+        // Parallel execution of password comparison for all candidate employees
+        const results = await Promise.all(employees.map(emp => comparePassword(pin, emp.access_pin_hash)));
+        const matchedIndex = results.findIndex(result => result);
+        const matchedEmployeeId = matchedIndex !== -1 ? employees[matchedIndex].id : null;
 
         if (!matchedEmployeeId) {
             return NextResponse.json(
