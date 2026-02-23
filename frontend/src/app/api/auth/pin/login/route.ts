@@ -12,6 +12,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // SCALABILITY WARNING:
+        // This query fetches ALL active employees and iterates through them to check the PIN.
+        // This is O(N) complexity where N is the number of employees.
+        // As the number of employees grows, this will become a performance bottleneck.
+        // SUGGESTED FIX:
+        // 1. Ask for a "Company Code" in the login screen to filter employees by company first.
+        // 2. Or, store a searchable hash of the PIN (e.g., SHA256) alongside the bcrypt hash.
+        //    (Note: This reduces security slightly against rainbow tables if the salt isn't managed carefully,
+        //    but for 4-6 digit PINs, rainbow tables are trivial anyway. Rate limiting is more important).
         const employees = await prisma.employee.findMany({
             where: { is_active: true },
             select: { id: true, access_pin_hash: true },
