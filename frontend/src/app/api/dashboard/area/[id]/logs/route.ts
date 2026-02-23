@@ -9,6 +9,26 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id: areaId } = await params;
 
+    // Verify area belongs to user's company
+    const area = await prisma.operationalArea.findUnique({
+        where: { id: areaId },
+        select: { company_id: true },
+    });
+
+    if (!area) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Área no encontrada' } },
+            { status: 404 }
+        );
+    }
+
+    if (area.company_id !== user.company_id) {
+        return NextResponse.json(
+            { success: false, error: { code: 'AUTH_FORBIDDEN', message: 'Acceso denegado a esta área' } },
+            { status: 403 }
+        );
+    }
+
     const { searchParams } = request.nextUrl;
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100);
     const from = searchParams.get('from');
