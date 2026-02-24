@@ -16,13 +16,15 @@ interface TaskFilters {
 export const taskService = {
     // ─── Tasks ──────────────────────
 
-    listTasks: async (filters: TaskFilters = {}): Promise<{ success: boolean; data: { data: Task[] } }> => {
+    listTasks: async (filters: TaskFilters = {}, silent = false): Promise<{ success: boolean; data: { data: Task[] } }> => {
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined && value !== '') params.append(key, String(value));
         });
         const query = params.toString();
-        return apiRequest(`/tasks${query ? `?${query}` : ''}`);
+        return apiRequest(`/tasks${query ? `?${query}` : ''}`, {
+            ...(silent ? { skipRedirectOn401: true } : {}),
+        });
     },
 
     createTask: async (payload: CreateTaskPayload): Promise<{ success: boolean; data: Task }> => {

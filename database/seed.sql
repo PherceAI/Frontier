@@ -18,7 +18,7 @@ VALUES (
     '22222222-2222-2222-2222-222222222222',
     '11111111-1111-1111-1111-111111111111',
     'admin@hotel.com',
-    '$2b$10$9C3RQ25TQ9hb2hAuWARIsOMsGhOe3jycB76Ldn3cDRrBU7OHu7JWC',
+    '$2b$10$.0Fko2E4qzx0SOQfivfO0.hgukvgYcfsBzWR/wny6AGizh7iWQAeG',
     'Administrador',
     'OWNER',
     true,
@@ -27,11 +27,11 @@ VALUES (
 ) ON CONFLICT (email) DO NOTHING;
 
 -- Operational Areas
-INSERT INTO operational_areas (id, company_id, name, type, is_active, created_at, updated_at) VALUES
-    ('aaaa1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Limpieza', 'SOURCE', true, NOW(), NOW()),
-    ('aaaa2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Camareras', 'SOURCE', true, NOW(), NOW()),
-    ('aaaa3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Lavandería', 'PROCESSOR', true, NOW(), NOW()),
-    ('aaaa4444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'Cocina', 'PROCESSOR', true, NOW(), NOW())
+INSERT INTO operational_areas (id, company_id, name, type, is_active, created_at) VALUES
+    ('aaaa1111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'Limpieza', 'SOURCE', true, NOW()),
+    ('aaaa2222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Camareras', 'SOURCE', true, NOW()),
+    ('aaaa3333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'Lavandería', 'PROCESSOR', true, NOW()),
+    ('aaaa4444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'Cocina', 'PROCESSOR', true, NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Employees (PINs: María=1234, Pedro=5678, Ana=9012)
@@ -42,10 +42,10 @@ INSERT INTO employees (id, company_id, full_name, employee_code, access_pin_hash
 ON CONFLICT (id) DO NOTHING;
 
 -- Assign employees to areas
-INSERT INTO employee_areas (employee_id, area_id) VALUES
-    ('eeee1111-1111-1111-1111-111111111111', 'aaaa1111-1111-1111-1111-111111111111'),
-    ('eeee2222-2222-2222-2222-222222222222', 'aaaa2222-2222-2222-2222-222222222222'),
-    ('eeee3333-3333-3333-3333-333333333333', 'aaaa3333-3333-3333-3333-333333333333')
+INSERT INTO employee_areas (employee_id, area_id, updated_at) VALUES
+    ('eeee1111-1111-1111-1111-111111111111', 'aaaa1111-1111-1111-1111-111111111111', NOW()),
+    ('eeee2222-2222-2222-2222-222222222222', 'aaaa2222-2222-2222-2222-222222222222', NOW()),
+    ('eeee3333-3333-3333-3333-333333333333', 'aaaa3333-3333-3333-3333-333333333333', NOW())
 ON CONFLICT DO NOTHING;
 
 -- Catalog items

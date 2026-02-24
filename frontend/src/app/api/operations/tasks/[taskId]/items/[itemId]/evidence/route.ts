@@ -39,10 +39,8 @@ export async function POST(request: NextRequest, { params }: Params) {
         const labelSafe = checklistItem.label.replace(/[^a-zA-Z0-9]/g, '');
         const fileName = `${dateStr}_${timeStr}_${empName}_${labelSafe}.jpg`;
 
-        // n8n Webhook Hook
-        // Since you've mentioned n8n is "easy", the most systemic and standard way to connect a modern Next.js app 
-        // to your personalized n8n (where you do the Google Drive upload) is to POST the image to your n8n workflow.
-        const webhookUrl = process.env.N8N_WEBHOOK_URL;
+        // n8n Webhook
+        const webhookUrl = process.env.N8N_AI_ANALYSIS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
 
         if (!webhookUrl) throw new Error("n8n Webhook URL is missing in environment");
 
@@ -53,19 +51,40 @@ export async function POST(request: NextRequest, { params }: Params) {
         n8nFormData.append('itemId', itemId);
         n8nFormData.append('employee', authData.employee.full_name);
 
+        console.log('[ITEM EVIDENCE] Sending to n8n:', webhookUrl);
         const response = await fetch(webhookUrl, {
             method: 'POST',
-            body: n8nFormData
+            body: n8nFormData,
+            signal: AbortSignal.timeout(60000),
         });
 
-        if (!response.ok) throw new Error("n8n Webhook Upload Failed");
+        const rawBody = await response.text();
+        console.log('[ITEM EVIDENCE] n8n response status:', response.status, 'body length:', rawBody.length);
 
-        const n8nData = await response.json();
+        if (!response.ok) {
+            console.error('[ITEM EVIDENCE] n8n error response:', rawBody.substring(0, 500));
+            throw new Error(`n8n Webhook failed (HTTP ${response.status}): ${rawBody.substring(0, 200)}`);
+        }
 
-        // Ensure your n8n workflow returns JSON: { "url": "https://drive.google.com/open?id=..." }
+        if (!rawBody || rawBody.trim().length === 0) {
+            console.error('[ITEM EVIDENCE] n8n returned empty body');
+            throw new Error('n8n devolvió una respuesta vacía. Verifica el nodo "Respond to Webhook" en n8n.');
+        }
+
+        let n8nData: any;
+        try {
+            n8nData = JSON.parse(rawBody);
+        } catch (parseErr) {
+            console.error('[ITEM EVIDENCE] n8n response is not JSON:', rawBody.substring(0, 500));
+            throw new Error(`n8n no devolvió JSON válido. Respuesta: ${rawBody.substring(0, 100)}`);
+        }
+
         const webViewLink = n8nData.url;
 
-        if (!webViewLink) throw new Error("n8n did not return an image URL");
+        if (!webViewLink) {
+            console.error('[ITEM EVIDENCE] n8n response missing "url" field. Got:', JSON.stringify(n8nData).substring(0, 300));
+            throw new Error(`n8n no devolvió URL de imagen. Keys: ${Object.keys(n8nData).join(', ')}`);
+        }
 
         await prisma.taskChecklistItem.update({
             where: { id: itemIdNum },

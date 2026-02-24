@@ -221,6 +221,10 @@ model Task {
   priority         Int       @default(2) @db.SmallInt
   due_date         DateTime? @db.Date
   due_time         DateTime? @db.Time(0)
+  requires_photo   Boolean   @default(false)
+  evidence_url     String?   @db.Text
+  ai_analysis      String?   @db.Text
+  ai_status        String?   @db.VarChar(20)
   started_at       DateTime?
   completed_at     DateTime?
   completion_notes String?

@@ -3,10 +3,11 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 interface RequestOptions extends RequestInit {
     token?: string;
+    skipRedirectOn401?: boolean;
 }
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { token, headers, ...rest } = options;
+    const { token, skipRedirectOn401, headers, ...rest } = options;
 
     // Separate token retrieval
     const storedSessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : undefined;
@@ -47,6 +48,11 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
                 // Skip redirect for login endpoints — a failed login should NOT clear existing sessions
                 const isLoginEndpoint = endpoint.includes('/auth/pin/login') || endpoint.includes('/auth/admin/login');
                 if (!isLoginEndpoint) {
+                    // If this is a silent polling request, don't redirect — just return null
+                    if (skipRedirectOn401) {
+                        return null as T;
+                    }
+
                     console.warn('[API] Session expired or invalid. Redirecting to login.');
                     localStorage.removeItem('token');
                     localStorage.removeItem('sessionToken');
@@ -248,9 +254,11 @@ export const operationsApi = {
         }
     },
     tasks: {
-        listMyTasks: async () => {
-            const res = await apiRequest<{ data: any[] }>('/operations/tasks');
-            return res.data;
+        listMyTasks: async (silent = false) => {
+            const res = await apiRequest<{ data: any[] }>('/operations/tasks', {
+                ...(silent ? { skipRedirectOn401: true } : {}),
+            });
+            return res?.data;
         },
         toggleItem: async (taskId: string, itemId: number, isCompleted: boolean) => {
             const res = await apiRequest<any>(`/operations/tasks/${taskId}/items/${itemId}`, {

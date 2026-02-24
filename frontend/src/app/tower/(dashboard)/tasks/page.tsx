@@ -10,7 +10,8 @@ import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/types/tasks';
 import {
     ClipboardList, Plus, Filter, Calendar, Users, MapPin,
     Clock, CheckCircle2, AlertTriangle, X, ChevronDown,
-    Play, Eye, Trash2, BarChart3, ListChecks, ExternalLink
+    Play, Eye, Trash2, BarChart3, ListChecks, ExternalLink,
+    Sparkles, Loader2, RefreshCw
 } from 'lucide-react';
 
 interface EmployeeOption { id: string; fullName: string; employeeCode: string; full_name?: string; employee_code?: string; }
@@ -24,7 +25,7 @@ export default function TowerTasksPage() {
     const [areas, setAreas] = useState<AreaOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [selectedTask, setSelectedTask] = useState<string | null>(null);
 
     // Filters
     const [filterStatus, setFilterStatus] = useState('');
@@ -41,10 +42,24 @@ export default function TowerTasksPage() {
                 due_date: filterDate || undefined,
                 limit: 100,
             });
-            setTasks((res.data as any) || []);
+            setTasks((res?.data as any) || []);
         } catch (err) {
             toast.error('Error al cargar tareas');
         }
+    }, [filterStatus, filterArea, filterEmployee, filterDate]);
+
+    // Silent version for polling — won't redirect on 401
+    const fetchTasksSilent = useCallback(async () => {
+        try {
+            const res = await taskService.listTasks({
+                status: filterStatus || undefined,
+                area_id: filterArea || undefined,
+                assigned_to: filterEmployee || undefined,
+                due_date: filterDate || undefined,
+                limit: 100,
+            }, true);
+            if (res?.data) setTasks((res.data as any) || []);
+        } catch { /* silent — no toast, no redirect */ }
     }, [filterStatus, filterArea, filterEmployee, filterDate]);
 
     const fetchStats = async () => {
@@ -76,8 +91,29 @@ export default function TowerTasksPage() {
         load();
     }, [fetchTasks]);
 
+    // General polling: auto-refresh every 15s (silent, no redirect)
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        const interval = setInterval(() => {
+            fetchTasksSilent();
+            fetchStats();
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [fetchTasksSilent]);
+
+    // Faster polling when AI is analyzing (8s)
+    useEffect(() => {
+        const hasAnalyzing = tasks.some(t => t.ai_status === 'ANALYZING');
+        if (!hasAnalyzing) return;
+
+        const interval = setInterval(() => {
+            fetchTasksSilent();
+            fetchStats();
+        }, 8000);
+
+        return () => clearInterval(interval);
+    }, [tasks, fetchTasks]);
+
+    useEffect(() => {
         fetchTasks();
     }, [filterStatus, filterArea, filterEmployee, filterDate, fetchTasks]);
 
@@ -98,7 +134,14 @@ export default function TowerTasksPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Gestión de Tareas</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                        Gestión de Tareas
+                        {tasks.some(t => t.ai_status === 'ANALYZING') && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg animate-pulse">
+                                <Sparkles className="w-3.5 h-3.5" /> IA procesando...
+                            </span>
+                        )}
+                    </h1>
                     <p className="text-slate-500 text-sm mt-1">Asigna, monitorea y gestiona tareas del equipo operativo</p>
                 </div>
                 <button
@@ -255,7 +298,7 @@ export default function TowerTasksPage() {
                                             </td>
                                             <td className="px-4 py-3.5 text-right space-x-2">
                                                 <button
-                                                    onClick={() => setSelectedTask(task)}
+                                                    onClick={() => setSelectedTask(task.id)}
                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                                                     title="Ver Detalle y Evidencia"
                                                 >
@@ -290,8 +333,8 @@ export default function TowerTasksPage() {
             )}
 
             {/* View Task Modal */}
-            {selectedTask && (
-                <ViewTaskModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+            {selectedTask && tasks.find(t => t.id === selectedTask) && (
+                <ViewTaskModal task={tasks.find(t => t.id === selectedTask)!} onClose={() => setSelectedTask(null)} />
             )}
         </div>
     );
@@ -340,6 +383,65 @@ function ViewTaskModal({ task, onClose }: { task: Task; onClose: () => void }) {
                         </p>
                     </div>
                 </div>
+
+                {/* AI Analysis Result */}
+                {(task.requires_photo || task.evidence_url || task.ai_status) && (
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className={task.ai_status === 'ANALYZING' ? 'text-blue-500' : task.requires_photo && !task.evidence_url ? 'text-amber-500' : 'text-blue-500'}>📸</span>
+                                Evidencia de IA
+                            </span>
+                            {task.ai_status && task.ai_status !== 'ANALYZING' && task.ai_status !== 'ERROR' && (
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${task.ai_status === 'CLEAN' ? 'bg-emerald-100 text-emerald-700' :
+                                    task.ai_status === 'REGULAR' ? 'bg-amber-100 text-amber-700' :
+                                        'bg-red-100 text-red-700'
+                                    }`}>
+                                    {task.ai_status}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* ANALYZING state */}
+                        {task.ai_status === 'ANALYZING' && (
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100 animate-pulse mb-3">
+                                <div className="relative">
+                                    <Sparkles className="w-5 h-5 text-blue-500" />
+                                    <div className="absolute inset-0 animate-ping">
+                                        <Sparkles className="w-5 h-5 text-blue-400 opacity-50" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-700">IA procesando análisis...</p>
+                                    <p className="text-[11px] text-blue-500">Esta vista se actualiza automáticamente cada 15s</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ERROR state */}
+                        {task.ai_status === 'ERROR' && (
+                            <div className="p-3 rounded-xl bg-red-50 border border-red-100 mb-3">
+                                <p className="text-sm font-semibold text-red-600">Error en análisis IA</p>
+                                {task.ai_analysis && <p className="text-xs text-red-500 mt-1">{task.ai_analysis}</p>}
+                            </div>
+                        )}
+
+                        {!task.evidence_url && task.ai_status !== 'ANALYZING' && task.ai_status !== 'ERROR' ? (
+                            <p className="text-sm text-slate-500 italic">Pendiente por subir foto.</p>
+                        ) : task.evidence_url ? (
+                            <div className="space-y-3">
+                                {task.ai_analysis && task.ai_status !== 'ANALYZING' && task.ai_status !== 'ERROR' && (
+                                    <p className="text-sm text-slate-700 italic border-l-2 border-blue-400 pl-3">"{task.ai_analysis}"</p>
+                                )}
+                                <a href={task.evidence_url} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors">
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    Ver Foto Analizada
+                                </a>
+                            </div>
+                        ) : null}
+                    </div>
+                )}
 
                 {/* Checklist & Evidence */}
                 <div>
@@ -434,6 +536,7 @@ function CreateTaskModal({ employees, areas, templates, onClose, onCreated }: {
     const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
     const [dueTime, setDueTime] = useState('');
     const [templateId, setTemplateId] = useState('');
+    const [requiresPhoto, setRequiresPhoto] = useState(false);
     const [checklist, setChecklist] = useState<{ label: string; is_required: boolean }[]>([]);
     const [newItem, setNewItem] = useState('');
     const [saving, setSaving] = useState(false);
@@ -477,6 +580,7 @@ function CreateTaskModal({ employees, areas, templates, onClose, onCreated }: {
                 priority,
                 due_date: dueDate || undefined,
                 due_time: dueTime || undefined,
+                requires_photo: requiresPhoto,
                 checklist: checklist.length > 0 ? checklist : undefined,
             };
             await taskService.createTask(payload);
@@ -561,6 +665,18 @@ function CreateTaskModal({ employees, areas, templates, onClose, onCreated }: {
                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hora</label>
                             <input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900" />
                         </div>
+                    </div>
+
+                    {/* Requires Photo Toggle */}
+                    <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div className="flex-1">
+                            <label className="text-sm font-bold text-slate-800">Requiere Foto de Evidencia</label>
+                            <p className="text-xs text-slate-500">Al finalizar la tarea se deberá subir una foto la cual será analizada por IA.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" className="sr-only peer" checked={requiresPhoto} onChange={e => setRequiresPhoto(e.target.checked)} />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
                     </div>
 
                     {/* Checklist */}

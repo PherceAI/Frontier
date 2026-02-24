@@ -27,6 +27,10 @@ export interface Task {
     priority: TaskPriority;
     due_date: string | null;
     due_time: string | null;
+    requires_photo: boolean;
+    evidence_url?: string | null;
+    ai_analysis?: string | null;
+    ai_status?: string | null;
     started_at: string | null;
     completed_at: string | null;
     completion_notes: string | null;
@@ -73,6 +77,7 @@ export interface CreateTaskPayload {
     priority?: TaskPriority;
     due_date?: string;
     due_time?: string;
+    requires_photo?: boolean;
     checklist?: { label: string; is_required?: boolean }[];
 }
 

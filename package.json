@@ -8,7 +8,7 @@
     "start": "cd frontend && npm start",
     "db:up": "docker compose up -d postgres pgadmin",
     "db:down": "docker compose down",
-    "db:reset": "docker compose down -v && docker compose up -d postgres pgadmin",
+    "db:reset": "docker compose down && docker compose up -d postgres pgadmin",
     "prisma:generate": "cd frontend && npx prisma generate",
     "prisma:migrate": "cd frontend && npx prisma migrate dev",
     "prisma:studio": "cd frontend && npx prisma studio",
