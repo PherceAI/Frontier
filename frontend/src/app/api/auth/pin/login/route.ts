@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/helpers';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+    // 🛡️ Sentinel: Prevent brute-force attacks on PIN login
+    const rateLimitError = rateLimit(request, { limit: 5, windowMs: 60 * 1000 }); // 5 attempts per minute per IP
+    if (rateLimitError) {
+        return rateLimitError;
+    }
+
     try {
         const { pin } = await request.json();
         if (!pin) {
