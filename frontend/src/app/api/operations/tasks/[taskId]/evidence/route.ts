@@ -98,7 +98,7 @@ function processN8nInBackground(
         console.log('[EVIDENCE BG] Starting background n8n upload for task:', taskId);
 
         const n8nFormData = new FormData();
-        const fileBlob = new Blob([buffer], { type: mimeType });
+        const fileBlob = new Blob([new Uint8Array(buffer)], { type: mimeType });
         n8nFormData.append('file', fileBlob, fileName);
         n8nFormData.append('taskId', taskId);
         n8nFormData.append('employee', employeeName);
