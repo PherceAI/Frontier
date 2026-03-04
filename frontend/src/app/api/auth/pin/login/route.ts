@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/helpers';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
+        // Rate limit PIN logins: max 5 attempts per IP every 1 minute
+        // This is a critical defense against brute-forcing 4-6 digit PINs.
+        const limitResult = rateLimit(`pin-login-${ip}`, 5, 60000);
+        if (!limitResult.success) {
+            return NextResponse.json(
+                { success: false, error: { code: 'AUTH_RATE_LIMIT', message: 'Demasiados intentos. Por favor, inténtelo de nuevo más tarde.' } },
+                { status: 429 }
+            );
+        }
+
         const { pin } = await request.json();
         if (!pin) {
             return NextResponse.json(

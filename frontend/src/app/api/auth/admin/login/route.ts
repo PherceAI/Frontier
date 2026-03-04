@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, signJwt, signRefreshToken } from '@/lib/auth/helpers';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
+        // Rate limit admin logins: max 5 attempts per IP every 1 minute
+        const limitResult = rateLimit(`admin-login-${ip}`, 5, 60000);
+        if (!limitResult.success) {
+            return NextResponse.json(
+                { success: false, error: { code: 'AUTH_RATE_LIMIT', message: 'Demasiados intentos. Por favor, inténtelo de nuevo más tarde.' } },
+                { status: 429 }
+            );
+        }
+
         const { email, password } = await request.json();
 
         if (!email || !password) {
