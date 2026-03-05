@@ -1,0 +1,4 @@
+## 2024-05-24 - [IDOR in Operational Task Endpoints]
+**Vulnerability:** Several operational task endpoints (`/api/operations/tasks/[taskId]`, `/api/operations/tasks/[taskId]/items/[itemId]`, `/api/my-tasks/[id]/checklist/[itemId]`, `/api/my-tasks/[id]/complete`) allowed any authenticated user to modify tasks and checklist items belonging to other companies or employees because they queried by `id` without verifying `company_id` and/or `assigned_to`.
+**Learning:** Using `prisma.findUnique` or `findFirstOrThrow` solely by ID on multi-tenant SaaS systems causes severe IDOR risks. Context object (`auth.employee.company_id` or `auth.employee.id`) must always be verified during retrieval of entities before allowing updates.
+**Prevention:** Always scope database queries with `company_id` and, where applicable, `assigned_to` using `findFirstOrThrow` before modifying data in multi-tenant operational APIs.

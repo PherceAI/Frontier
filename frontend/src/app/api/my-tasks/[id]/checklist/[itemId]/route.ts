@@ -7,9 +7,16 @@ type Params = { params: Promise<{ id: string; itemId: string }> };
 export async function PATCH(request: NextRequest, { params }: Params) {
     const auth = await requireSession(request);
     if (isErrorResponse(auth)) return auth;
-    const { itemId } = await params;
+    const { id, itemId } = await params;
 
-    const item = await prisma.taskChecklistItem.findUniqueOrThrow({ where: { id: parseInt(itemId) } });
+    // 🛡️ Sentinel: Prevent IDOR by ensuring checklist item belongs to employee's assigned task
+    const item = await prisma.taskChecklistItem.findFirstOrThrow({
+        where: {
+            id: parseInt(itemId),
+            task_id: id,
+            task: { assigned_to: auth.employee.id, company_id: auth.employee.company_id }
+        }
+    });
 
     const data = await prisma.taskChecklistItem.update({
         where: { id: parseInt(itemId) },

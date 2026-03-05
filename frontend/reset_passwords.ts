@@ -14,19 +14,19 @@ async function main() {
 
     await prisma.employee.update({
         where: { company_id_employee_code: { company_id: '11111111-1111-1111-1111-111111111111', employee_code: 'EMP-001' } },
-        data: { access_pin_hash: bcrypt.hashSync('1234', 10), access_pin_plain: '1234' }
+        data: { access_pin_hash: bcrypt.hashSync('1234', 10) }
     });
     console.log('EMP-001 PIN updated to 1234');
 
     await prisma.employee.update({
         where: { company_id_employee_code: { company_id: '11111111-1111-1111-1111-111111111111', employee_code: 'EMP-002' } },
-        data: { access_pin_hash: bcrypt.hashSync('5678', 10), access_pin_plain: '5678' }
+        data: { access_pin_hash: bcrypt.hashSync('5678', 10) }
     });
     console.log('EMP-002 PIN updated to 5678');
 
     await prisma.employee.update({
         where: { company_id_employee_code: { company_id: '11111111-1111-1111-1111-111111111111', employee_code: 'EMP-003' } },
-        data: { access_pin_hash: bcrypt.hashSync('9012', 10), access_pin_plain: '9012' }
+        data: { access_pin_hash: bcrypt.hashSync('9012', 10) }
     });
     console.log('EMP-003 PIN updated to 9012');
 

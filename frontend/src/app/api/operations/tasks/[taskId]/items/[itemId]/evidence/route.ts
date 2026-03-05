@@ -45,7 +45,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         if (!webhookUrl) throw new Error("n8n Webhook URL is missing in environment");
 
         const n8nFormData = new FormData();
-        const fileBlob = new Blob([buffer], { type: file.type || 'image/jpeg' });
+        const fileBlob = new Blob([new Uint8Array(buffer)], { type: file.type || 'image/jpeg' });
         n8nFormData.append('file', fileBlob, fileName);
         n8nFormData.append('taskId', taskId);
         n8nFormData.append('itemId', itemId);
