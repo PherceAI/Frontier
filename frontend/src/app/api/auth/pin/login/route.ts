@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/helpers';
+import { loginRateLimiter } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        // Fallback to a global limit if IP can't be safely determined (e.g. proxy without x-forwarded-for).
+        // Since NextRequest in App Router environments often drops `request.ip`, we use
+        // x-forwarded-for but sanitize it to the first IP to prevent bypasses like "IP1, IP2"
+        const forwardedFor = request.headers.get('x-forwarded-for');
+        const ip = (forwardedFor ? forwardedFor.split(',')[0].trim() : undefined) || 'global';
+        if (!loginRateLimiter.check(ip)) {
+            return NextResponse.json(
+                { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Demasiados intentos de inicio de sesión. Por favor, inténtelo de nuevo más tarde.' } },
+                { status: 429 }
+            );
+        }
+
         const { pin } = await request.json();
         if (!pin) {
             return NextResponse.json(
