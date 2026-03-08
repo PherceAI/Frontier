@@ -11,8 +11,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json();
 
+    // Verify task ownership
+    const task = await prisma.task.findFirstOrThrow({
+        where: {
+            id: taskId,
+            company_id: auth.employee.company_id
+        }
+    });
+
+    const existingItem = await prisma.taskChecklistItem.findFirstOrThrow({
+        where: {
+            id: parseInt(itemId),
+            task_id: task.id
+        }
+    });
+
     const data = await prisma.taskChecklistItem.update({
-        where: { id: parseInt(itemId) },
+        where: { id: existingItem.id },
         data: { is_completed: body.is_completed, completed_at: body.is_completed ? new Date() : null },
     });
 

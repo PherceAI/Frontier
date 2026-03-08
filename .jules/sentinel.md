@@ -1,0 +1,4 @@
+## 2024-05-23 - Prevent IDOR by using findFirstOrThrow with contextual scopes in API endpoints
+**Vulnerability:** Tasks and Checklist Items could be modified by users belonging to different companies or not assigned to the tasks, because queries were only matching by resource ID using `findUnique` or `findFirst` without additional context.
+**Learning:** In a multi-tenant Prisma setup (where `auth.employee.company_id` and `auth.employee.id` denote strict boundaries), always apply relational checks in `.findFirstOrThrow` instead of `.findUniqueOrThrow`. Passing just `id` to `findUnique` implicitly trusts the client's payload.
+**Prevention:** Rather than directly querying nested resources by ID, first verify the parent resource is owned by/assigned to the requester (e.g. `company_id: auth.employee.company_id` or `assigned_to: auth.employee.id`) and then restrict the child query using the parent's ID (`task_id: task.id`).

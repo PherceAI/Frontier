@@ -11,8 +11,16 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json().catch(() => ({}));
 
+    // Verify task assignment
+    const task = await prisma.task.findFirstOrThrow({
+        where: {
+            id,
+            assigned_to: auth.employee.id
+        }
+    });
+
     const data = await prisma.task.update({
-        where: { id },
+        where: { id: task.id },
         data: { status: 'COMPLETED', completed_at: new Date(), completion_notes: body.completion_notes ?? body.notes ?? null },
     });
 

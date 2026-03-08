@@ -10,14 +10,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { taskId } = await params;
 
     const body = await request.json();
-    const existing = await prisma.task.findFirstOrThrow({ where: { id: taskId } });
+    const existing = await prisma.task.findFirstOrThrow({
+        where: {
+            id: taskId,
+            company_id: auth.employee.company_id
+        }
+    });
     const updateData: Record<string, unknown> = { ...body };
 
     if (body.status === 'IN_PROGRESS' && !existing.started_at) updateData.started_at = new Date();
     if (body.status === 'COMPLETED') updateData.completed_at = new Date();
 
     const data = await prisma.task.update({
-        where: { id: taskId }, data: updateData,
+        where: { id: existing.id }, data: updateData,
         include: {
             assignee: { select: { id: true, full_name: true, employee_code: true } },
             area: { select: { id: true, name: true, type: true } },
