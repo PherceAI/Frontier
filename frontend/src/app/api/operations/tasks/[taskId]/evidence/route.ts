@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         }
 
         // Read file into memory BEFORE responding (ensure data is captured)
-        const buffer = Buffer.from(await file.arrayBuffer());
+        const fileBuffer = await file.arrayBuffer();
         const mimeType = file.type || 'image/jpeg';
 
         const task = await prisma.task.findUnique({ where: { id: taskId } });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
         // Fire-and-forget: launch the n8n call without awaiting it.
         // The captured buffer/fileName/webhookUrl are all in the closure scope.
-        processN8nInBackground(taskId, buffer, mimeType, fileName, webhookUrl, authData.employee.full_name);
+        processN8nInBackground(taskId, fileBuffer, mimeType, fileName, webhookUrl, authData.employee.full_name);
 
         // Return immediately — employee doesn't wait for AI
         return NextResponse.json({
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest, { params }: Params) {
  */
 function processN8nInBackground(
     taskId: string,
-    buffer: Buffer,
+    buffer: ArrayBuffer,
     mimeType: string,
     fileName: string,
     webhookUrl: string,

@@ -23,27 +23,36 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { id } = await params;
 
     const body = await request.json();
-    const { area_ids, areaIds, full_name, fullName, employee_code, employeeCode, ...rest } = body;
+    const { area_ids, areaIds, full_name, fullName, employee_code, employeeCode, shift, ...rest } = body;
     const finalAreaIds = area_ids || areaIds;
 
-    if (finalAreaIds) {
-        await prisma.employeeArea.deleteMany({ where: { employee_id: id } });
-        await prisma.employeeArea.createMany({
-            data: finalAreaIds.map((aId: string) => ({ employee_id: id, area_id: aId })),
+    try {
+        if (finalAreaIds) {
+            await prisma.employeeArea.deleteMany({ where: { employee_id: id } });
+            await prisma.employeeArea.createMany({
+                data: finalAreaIds.map((aId: string) => ({ employee_id: id, area_id: aId })),
+            });
+        }
+
+        const updateData: Record<string, unknown> = {};
+        if (full_name || fullName) updateData.full_name = full_name || fullName;
+        if (employee_code || employeeCode) updateData.employee_code = employee_code || employeeCode;
+        if (shift && ['MORNING', 'AFTERNOON', 'NIGHT'].includes(shift)) updateData.shift = shift;
+
+        const data = await prisma.employee.update({
+            where: { id },
+            data: updateData,
+            include: { areas: { include: { area: true } } },
         });
+
+        return NextResponse.json({ success: true, data });
+    } catch (error) {
+        console.error('[Employee PATCH Error]', error);
+        return NextResponse.json(
+            { success: false, error: { code: 'SERVER_ERROR', message: 'Error al actualizar empleado' } },
+            { status: 500 }
+        );
     }
-
-    const updateData: Record<string, unknown> = { ...rest };
-    if (full_name || fullName) updateData.full_name = full_name || fullName;
-    if (employee_code || employeeCode) updateData.employee_code = employee_code || employeeCode;
-
-    const data = await prisma.employee.update({
-        where: { id },
-        data: updateData,
-        include: { areas: { include: { area: true } } },
-    });
-
-    return NextResponse.json({ success: true, data });
 }
 
 export async function DELETE(request: NextRequest, { params }: Params) {

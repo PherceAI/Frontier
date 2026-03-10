@@ -17,7 +17,7 @@ interface Area {
     name: string;
     type: 'SOURCE' | 'PROCESSOR';
     description?: string;
-    isActive: boolean;
+    is_active: boolean;
     code?: string;
 }
 
@@ -249,7 +249,7 @@ export default function AreasPage() {
                                         Bitácora <ArrowUpRight className="w-3 h-3 ml-1" />
                                     </Link>
                                 </div>
-                                {!area.isActive && (
+                                {!area.is_active && (
                                     <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">INACTIVO</span>
                                 )}
                             </div>

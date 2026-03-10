@@ -216,7 +216,7 @@ export const opsApi = {
     }
 };
 
-import { CatalogItem, HousekeepingLogPayload, OperationEventResponse, LaundryStatusResponse } from '../types/operations';
+import { CatalogItem, HousekeepingLogPayload, OperationEventResponse } from '../types/operations';
 import { RoomData } from '../types/rooms';
 
 export const operationsApi = {
@@ -234,19 +234,6 @@ export const operationsApi = {
         },
         log: async (payload: HousekeepingLogPayload) => {
             const res = await apiRequest<{ data: OperationEventResponse }>('/operations/housekeeping/log', {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            return res.data;
-        }
-    },
-    laundry: {
-        status: async () => {
-            const res = await apiRequest<{ data: LaundryStatusResponse }>('/operations/laundry/status');
-            return res.data;
-        },
-        log: async (payload: { cycles: number, items?: { item_id: string, quantity: number }[], notes?: string }) => {
-            const res = await apiRequest<{ data: { eventId: string } }>('/operations/laundry/log', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });

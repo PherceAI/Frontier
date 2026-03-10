@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { History, Clock, FileText, CheckCircle2 } from 'lucide-react';
-import api from '@/lib/api';
+import api, { apiRequest } from '@/lib/api';
 
 interface CycleHistory {
     id: string;
@@ -25,9 +25,9 @@ export default function HistoryView() {
     const loadHistory = async () => {
         setIsLoading(true);
         try {
-            const statusRes = await api.operations.laundry.status() as any;
-            if (statusRes && statusRes.history) {
-                setHistory(statusRes.history);
+            const statusRes = await apiRequest<{ success: boolean; data: any }>('/operations/lavanderia');
+            if (statusRes && statusRes.data && statusRes.data.history) {
+                setHistory(statusRes.data.history);
             }
         } catch (error) {
             console.error("Error loading history", error);

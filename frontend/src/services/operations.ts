@@ -56,13 +56,13 @@ export const opsService: OperationsService = {
     },
 
     getLaundryStatus: async () => {
-        return apiRequest('/operations/laundry/status');
+        return apiRequest('/operations/lavanderia');
     },
 
     submitLaundryLog: async (cycles, items, notes) => {
-        return apiRequest('/operations/laundry/log', {
+        return apiRequest('/operations/lavanderia', {
             method: 'POST',
-            body: JSON.stringify({ cycles, items, notes }),
+            body: JSON.stringify({ event_type: 'WASH_CYCLE', items, notes }),
         });
     },
 

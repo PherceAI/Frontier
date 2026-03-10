@@ -22,21 +22,22 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { area_ids, areaIds, pin, full_name, fullName, employee_code, employeeCode, ...rest } = body;
+        const { area_ids, areaIds, pin, full_name, fullName, employee_code, employeeCode, shift } = body;
         const generatedPin = pin || Math.floor(1000 + Math.random() * 9000).toString();
         const pinHash = await hashPassword(generatedPin);
 
         const finalFullName = full_name || fullName;
         const finalEmployeeCode = employee_code || employeeCode || String(Date.now()).slice(-6);
         const finalAreaIds: string[] = area_ids || areaIds || [];
+        const finalShift = shift && ['MORNING', 'AFTERNOON', 'NIGHT'].includes(shift) ? shift : 'MORNING';
 
         const employee = await prisma.employee.create({
             data: {
-                ...rest,
                 full_name: finalFullName,
                 employee_code: finalEmployeeCode,
                 company_id: user.company_id,
                 access_pin_hash: pinHash,
+                shift: finalShift,
                 areas: finalAreaIds.length
                     ? { create: finalAreaIds.map((id: string) => ({ area_id: id })) }
                     : undefined,

@@ -67,16 +67,45 @@ export async function GET(request: NextRequest) {
     const area = await getAreaByName(auth.employee.id, 'PROCESSOR', 'Lavander');
     if (!area) return NextResponse.json({ success: false, error: { code: 'LAV_NO_AREA', message: 'Sin área de Lavandería' } }, { status: 400 });
 
+    const companyId = auth.employee.company_id;
+    const areaId = area.id;
+
     const [sourceTotal, processedTotal] = await Promise.all([
-        prisma.eventDetail.aggregate({ where: { event: { area: { type: 'SOURCE' }, company_id: auth.employee.company_id, event_type: { in: ['DEMAND', 'COLLECTION'] } } }, _sum: { quantity: true } }),
-        prisma.eventDetail.aggregate({ where: { event: { area_id: area.id, event_type: { in: ['SUPPLY', 'WASH_CYCLE'] } } }, _sum: { quantity: true } }),
+        prisma.eventDetail.aggregate({ where: { event: { area: { type: 'SOURCE' }, company_id: companyId, event_type: { in: ['DEMAND', 'COLLECTION'] } } }, _sum: { quantity: true } }),
+        prisma.eventDetail.aggregate({ where: { event: { area_id: areaId, event_type: { in: ['SUPPLY', 'WASH_CYCLE'] } } }, _sum: { quantity: true } }),
     ]);
 
+    // Per-item pending breakdown
+    const pendingByItem = await prisma.$queryRaw<{ item_id: string; item_name: string; collected: bigint; processed: bigint }[]>`
+        SELECT
+            ci.id AS item_id,
+            ci.name AS item_name,
+            COALESCE(SUM(CASE WHEN oe.event_type IN ('DEMAND','COLLECTION') AND src_area.type = 'SOURCE' THEN ed.quantity ELSE 0 END), 0) AS collected,
+            COALESCE(SUM(CASE WHEN oe.event_type IN ('SUPPLY','WASH_CYCLE') AND oe.area_id = ${areaId}::uuid THEN ed.quantity ELSE 0 END), 0) AS processed
+        FROM catalog_items ci
+        LEFT JOIN event_details ed ON ed.item_id = ci.id
+        LEFT JOIN operational_events oe ON oe.id = ed.event_id AND oe.company_id = ${companyId}::uuid
+        LEFT JOIN operational_areas src_area ON src_area.id = oe.area_id
+        WHERE ci.company_id = ${companyId}::uuid AND ci.is_active = true AND ci.category = 'LINEN'
+        GROUP BY ci.id, ci.name
+        ORDER BY ci.name
+    `;
+
+    const pendingItems = pendingByItem
+        .map(row => ({
+            itemId: row.item_id,
+            name: row.item_name,
+            collected: Number(row.collected),
+            processed: Number(row.processed),
+            pending: Math.max(0, Number(row.collected) - Number(row.processed)),
+        }))
+        .filter(item => item.collected > 0 || item.pending > 0);
+
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const todayEvents = await prisma.operationalEvent.findMany({ where: { employee_id: auth.employee.id, event_type: 'SUPPLY', timestamp: { gte: today } }, include: { details: { include: { item: true } } }, orderBy: { timestamp: 'desc' } });
+    const todayEvents = await prisma.operationalEvent.findMany({ where: { employee_id: auth.employee.id, event_type: { in: ['SUPPLY', 'WASH_CYCLE'] }, timestamp: { gte: today } }, include: { details: { include: { item: true } } }, orderBy: { timestamp: 'desc' } });
     const history = todayEvents.map((e: typeof todayEvents[0]) => ({ id: e.id, timestamp: e.timestamp.toTimeString().slice(0, 5), cycle_number: e.notes, items: e.details.map((d: typeof e.details[0]) => ({ name: d.item?.name ?? 'Item', quantity: d.quantity })) }));
 
-    return NextResponse.json({ success: true, data: { pending: Math.max(0, (sourceTotal._sum.quantity ?? 0) - (processedTotal._sum.quantity ?? 0)), totalCollected: sourceTotal._sum.quantity ?? 0, totalProcessed: processedTotal._sum.quantity ?? 0, history } });
+    return NextResponse.json({ success: true, data: { pending: Math.max(0, (sourceTotal._sum.quantity ?? 0) - (processedTotal._sum.quantity ?? 0)), totalCollected: sourceTotal._sum.quantity ?? 0, totalProcessed: processedTotal._sum.quantity ?? 0, pendingItems, history } });
 }
 
 export async function POST(request: NextRequest) {

@@ -1,39 +1,90 @@
-# Guía de Operación: Frontier 🚀
+# 🌊 Flujo de Operaciones: Camareras y Lavandería
 
-Bienvenido al "Segundo Cerebro" de tu hotel. Esta guía explica cómo fluye la información en el sistema para que le saques el máximo provecho.
+Este documento describe el flujo lógico y la arquitectura técnica para la gestión del ciclo de lavandería entre los departamentos de **Pisos (Camareras)** y **Lavandería**.
 
-## 1. El Concepto: Origen vs. Operación
+## 1. El Flujo Lógico de Negocio
 
-En Frontier, el hotel se organiza en dos tipos de áreas:
+1. **Turno de Camareras (07:00 AM - 03:00/04:00 PM)**
+   - Trabajan de Lunes a Sábado.
+   - Bajan ropa de cama y toallas sucias a lavandería en uno o varios viajes durante su turno.
+   - Cada entrega se registra en el sistema.
+   - El sistema totaliza lo entregado por cada camarera al final de su turno.
 
-- **Punto de Origen (SOURCE / Demanda)**: Áreas que "generan" trabajo o insumos para procesar.
-  - **Camareras**: Recolectan blancos de habitaciones (sábanas, toallas, etc.).
-  - **Limpieza**: Registran aseo de áreas públicas, lobbies, baños comunes.
-- **Punto de Operación (PROCESSOR / Suministro)**: Áreas que "procesan" el trabajo generado.
-  - **Lavandería**: Procesa los blancos recolectados por Camareras (ciclos de lavado).
-  - **Cocina**: Gestiona la preparación de alimentos y bebidas (A&B).
+2. **Inicio Turno Lavandería Tarde (03:00 PM - 10:00 PM)**
+   - La encargada de lavandería inicia su turno y ve el **Total Pendiente**.
+   - El inventario inicial pendiente es la suma de todo lo que han bajado las camareras en el turno de la mañana, separado por items y por camarera.
+   - Items controlados:
+     - Toallas: Grandes, Medianas, Pequeñas.
+     - Sábanas: Grandes, Medianas, Pequeñas.
 
-## 2. El Flujo de Trabajo
+3. **Ciclo de Lavado (03:00 PM - 10:00 PM)**
+   - La encargada procesa lavados por ciclos y registra en el sistema las cantidades y tipos de items lavados.
+   - El sistema va descontando del total pendiente.
 
-### Paso 1: Configuración (Torre de Control - `/tower`)
-1.  **Crear Áreas**: Define tus 4 áreas operativas (Camareras, Lavandería, Limpieza, Cocina).
-2.  **Crear Colaboradores**: Registra a tu personal y asígnalos a sus áreas correspondientes. El sistema les generará un **PIN de acceso**.
-
-### Paso 2: La Operación (Portal Hands - `/hands`)
-El personal operativo utiliza la versión móvil con su PIN:
-1.  **Camareras**: Registran recolección de blancos por habitación.
-2.  **Lavandería**: Ven pendientes de blancos y registran ciclos de lavado completados.
-3.  **Limpieza**: Registran tareas de aseo en áreas públicas.
-4.  **Cocina**: Registran preparaciones y pedidos de alimentos.
-
-### Paso 3: El Control (Dashboard)
-Los directores ven en tiempo real:
-- **Balance Operativo**: ¿Estamos procesando lo que se solicita?
-- **Cuellos de Botella**: Si la demanda es mayor que el suministro, verás indicadores de alerta.
-- **Datos cruzados (BI)**: Toda la actividad converge en el ledger transaccional para análisis gerencial.
-
-## 3. Escalabilidad
-El sistema está diseñado para soportar hasta **12 áreas operativas** futuras (Recepción, Mantenimiento, Spa, etc.), cada una con su propio módulo de lógica de negocio independiente en el backend.
+4. **Cierre de Turno y Traspaso (10:00 PM)**
+   - Se cierra el turno.
+   - Todo queda registrado en la vitácora digital de Lavandería y Camareras.
+   - El saldo **restante (no lavado)** se convierte automáticamente en el inventario inicial para el turno de Lavandería del día siguiente (07:00 AM - 03:00 PM).
 
 ---
-*Frontier elimina el papel y los "yo no fui", dándote la verdad absoluta de tu operación.*
+
+## 2. Arquitectura Técnica Recomendada (Next.js + Postgres + Prisma)
+
+### A. Base de Datos (Prisma)
+Necesitaremos registrar movimientos (Transacciones) en lugar de solo actualizar estados, para mantener la trazabilidad (vitácora).
+
+```prisma
+// schema.prisma (Propuesta conceptual)
+
+enum OperationType {
+  DROP_OFF  // Camarera deja ropa sucia
+  WASH      // Lavandería lava ropa
+}
+
+enum ItemType {
+  TOWEL_LARGE
+  TOWEL_MEDIUM
+  TOWEL_SMALL
+  SHEET_LARGE
+  SHEET_MEDIUM
+  SHEET_SMALL
+}
+
+model LaundryTransaction {
+  id          String        @id @default(uuid())
+  type        OperationType
+  itemType    ItemType
+  quantity    Int
+  createdAt   DateTime      @default(now())
+
+  // Relaciones
+  createdBy   String        // ID del empleado que registra (Camarera o Lavandera)
+  employee    Employee      @relation(fields: [createdBy], references: [id])
+}
+```
+
+### B. Lógica de Backend (API Routes)
+Siguiendo las buenas prácticas (Route Handlers, no Server Actions):
+
+1. **`POST /api/operations/laundry/dropoff`**
+   - Recibe la entrega parcial de una camarera.
+   - Valida datos con Zod.
+   - Crea un `LaundryTransaction` de tipo `DROP_OFF`.
+
+2. **`GET /api/operations/laundry/pending`**
+   - Calcula el stock sucio actual.
+   - Query: Suma todos los `DROP_OFF` y resta todos los `WASH`.
+   - Agrupa los `DROP_OFF` del día por camarera para que la lavandería sepa exactamente quién bajó qué.
+
+3. **`POST /api/operations/laundry/wash`**
+   - Registra que un ciclo de lavado ha terminado.
+   - Crea un `LaundryTransaction` de tipo `WASH`.
+
+### C. Frontend (App Routes)
+Usando TanStack Query para fetching de datos y shadcn/ui para la interfaz:
+
+- **Módulo Camareras (`/hands/pisos/dropoff`)**:
+  - Formulario sencillo (react-hook-form) para ingresar cantidades entregadas en ese momento.
+- **Módulo Lavandería (`/hands/laundry/dashboard`)**:
+  - **Vista "Stock Inicial / Pendiente"**: Ejecuta un `useQuery` al endpoint `pending`. Muestra una tabla/grid agrupado por camarera mostrando toallas y sábanas.
+  - **Vista "Registrar Lavado"**: Formulario rápido (`useMutation`) donde anota qué lavó en cada ciclo. Al guardar, invalida la caché de React Query para actualizar el stock pendiente automáticamente en tiempo real.

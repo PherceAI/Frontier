@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, Flame, WashingMachine, Plus, Minus, Shirt, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Play, Flame, WashingMachine, Plus, Minus, Shirt, ArrowRight, Loader2, Sparkles, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '@/lib/api';
+import api, { apiRequest } from '@/lib/api';
 // from definitions in types/operations
 interface CatalogItem {
     id: string;
@@ -18,10 +18,19 @@ interface WelcomeData {
     employeeCode: string;
 }
 
+interface PendingItem {
+    itemId: string;
+    name: string;
+    collected: number;
+    processed: number;
+    pending: number;
+}
+
 interface LaundryStatus {
     pending: number;
     totalCollected: number;
     totalProcessed: number;
+    pendingItems?: PendingItem[];
     history: any[];
 }
 
@@ -55,10 +64,12 @@ export default function LavanderiaView() {
             }
 
             // Fetch Status and Catalog in parallel
-            const [statusRes, catalogRes] = await Promise.all([
-                api.operations.laundry.status(),
+            const [statusResponse, catalogRes] = await Promise.all([
+                apiRequest<{ success: boolean; data: LaundryStatus }>('/operations/lavanderia'),
                 api.operations.catalog.housekeeping() // We will use generic catalog for now, or just fetch directly.
             ]);
+
+            const statusRes = (statusResponse as any)?.data;
 
             // Note: The specific backend endpoint for catalog might be different. If it fails, fallback to hardcoded.
             setStatus(statusRes as any);
@@ -143,11 +154,14 @@ export default function LavanderiaView() {
             // Calculate cycle number roughly based on history length today
             const cycleNumber = `Ciclo #${(status?.history?.length || 0) + 1}`;
 
-            await api.operations.laundry.log({
-                cycles: 1,
-                items: payloadItems,
-                notes: cycleNumber // Passing cycle number as notes for backend log
-            } as any);
+            await apiRequest('/operations/lavanderia', {
+                method: 'POST',
+                body: JSON.stringify({
+                    event_type: 'WASH_CYCLE',
+                    items: payloadItems,
+                    notes: cycleNumber,
+                }),
+            });
 
             toast.success(
                 <div className="flex flex-col gap-1">
@@ -208,6 +222,41 @@ export default function LavanderiaView() {
                     </div>
                 </div>
             </div>
+
+            {/* Pending Items Breakdown */}
+            {status?.pendingItems && status.pendingItems.length > 0 && (
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Package className="w-5 h-5 text-amber-500" />
+                            Desglose Pendiente
+                        </h2>
+                        <span className="text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-full">
+                            {status.pending} total
+                        </span>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-100 dark:border-white/5 overflow-hidden divide-y divide-slate-50 dark:divide-white/5">
+                        {status.pendingItems.map(item => (
+                            <div key={item.itemId} className="flex items-center justify-between p-3.5">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.pending > 0 ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                                        <Shirt className="w-4 h-4" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-medium text-slate-400">
+                                        {item.collected} rec. / {item.processed} lav.
+                                    </span>
+                                    <span className={`text-sm font-bold tabular-nums min-w-[2rem] text-right ${item.pending > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                        {item.pending}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Main Action - Cycle Builder */}
             <div className="mb-6">

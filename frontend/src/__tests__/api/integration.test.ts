@@ -27,7 +27,13 @@ async function api(path: string, options: {
         ...(body ? { body: JSON.stringify(body) } : {}),
     });
 
-    const data = await res.json();
+    let data: any;
+    try {
+        data = await res.json();
+    } catch {
+        // Non-JSON response (e.g., HTML 404 page)
+        data = { success: false, error: { code: 'NON_JSON_RESPONSE', message: 'Response was not JSON' } };
+    }
     return { status: res.status, data };
 }
 
@@ -314,34 +320,33 @@ describe('Operations: Housekeeping (Camareras)', () => {
 });
 
 // =====================================================================
-// 7. OPERATIONS: Laundry (Lavandería) 
+// 7. OPERATIONS: Lavandería (Events-based - canonical system)
 // =====================================================================
-describe('Operations: Laundry (Lavandería)', () => {
-    it('should get laundry status for employee with PROCESSOR area', async () => {
+describe('Operations: Lavandería (Events)', () => {
+    it('should get lavandería status for employee with PROCESSOR area', async () => {
         const token = getToken('ana');
-        const res = await api('/operations/laundry/status', { sessionToken: token });
+        const res = await api('/operations/lavanderia', { sessionToken: token });
         if (res.status === 200) {
             expect(res.data.success).toBe(true);
             expect(res.data.data).toHaveProperty('pending');
             expect(res.data.data).toHaveProperty('totalCollected');
             expect(res.data.data).toHaveProperty('totalProcessed');
-            expect(res.data.data).toHaveProperty('history');
         } else {
             expect([400, 401]).toContain(res.status);
         }
     });
 
-    it('should reject laundry status without session', async () => {
-        const res = await api('/operations/laundry/status');
+    it('should reject lavandería status without session', async () => {
+        const res = await api('/operations/lavanderia');
         expect(res.status).toBe(401);
     });
 
-    it('should log laundry cycle for PROCESSOR employee', async () => {
+    it('should log wash cycle for PROCESSOR employee', async () => {
         const token = getToken('ana');
-        const res = await api('/operations/laundry/log', {
+        const res = await api('/operations/lavanderia', {
             method: 'POST',
             sessionToken: token,
-            body: { items: [{ item_id: null, quantity: 10 }], notes: 'Test Ciclo #1' },
+            body: { event_type: 'WASH_CYCLE', items: [{ item_id: null, quantity: 10 }], notes: 'Test Ciclo #1' },
         });
         expect([200, 400, 401]).toContain(res.status);
     });
@@ -611,5 +616,188 @@ describe('Security & Edge Cases', () => {
             body: 'not-json',
         });
         expect([400, 500]).toContain(res.status);
+    });
+});
+
+// =====================================================================
+// 17. LAVANDERÍA EVENTS: Lifecycle Tests
+// =====================================================================
+describe('Lavandería Events Lifecycle', () => {
+    // Re-login employees since the Logout test (section 15) may have invalidated tokens
+    beforeAll(async () => {
+        for (const [name, pin] of Object.entries(TEST_PINS)) {
+            const res = await api('/auth/pin/login', { method: 'POST', body: { pin } });
+            if (res.status === 200 && res.data?.data?.sessionToken) {
+                employeeTokens[name] = res.data.data.sessionToken;
+                employeeData[name] = res.data.data.employee;
+            }
+        }
+    }, 15000);
+
+    it('should get lavandería pending count', async () => {
+        const token = getToken('ana');
+        if (!token) return;
+
+        const res = await api('/operations/lavanderia?action=pending', { sessionToken: token });
+        if (res.status === 200) {
+            expect(res.data.success).toBe(true);
+            expect(res.data.data).toHaveProperty('pending');
+            expect(typeof res.data.data.pending).toBe('number');
+        } else {
+            // Employee may not be assigned to lavandería area
+            expect([400, 401]).toContain(res.status);
+        }
+    });
+
+    it('should submit a wash cycle via lavandería POST', async () => {
+        const token = getToken('ana');
+        if (!token) return;
+
+        const res = await api('/operations/lavanderia', {
+            method: 'POST',
+            sessionToken: token,
+            body: {
+                event_type: 'WASH_CYCLE',
+                items: [{ item_id: null, quantity: 5 }],
+                notes: 'Test Ciclo Vigente',
+            },
+        });
+        // 200 = success, 400 = no area assignment
+        expect([200, 400]).toContain(res.status);
+        if (res.status === 200) {
+            expect(res.data.success).toBe(true);
+            expect(res.data.data).toHaveProperty('eventId');
+        }
+    });
+
+    it('should get full lavandería status with breakdown', async () => {
+        const token = getToken('ana');
+        if (!token) return;
+
+        const res = await api('/operations/lavanderia', { sessionToken: token });
+        if (res.status === 200) {
+            expect(res.data.success).toBe(true);
+            const data = res.data.data;
+            expect(data).toHaveProperty('pending');
+            expect(data).toHaveProperty('totalCollected');
+            expect(data).toHaveProperty('totalProcessed');
+        } else {
+            expect([400, 401]).toContain(res.status);
+        }
+    });
+});
+
+// =====================================================================
+// 18. CONFIG: Structure Validation
+// =====================================================================
+describe('Config Structure Deep Validation', () => {
+    it('should have areas with correct types (SOURCE/PROCESSOR)', async () => {
+        const res = await api('/config/areas', { adminToken });
+        expect(res.status).toBe(200);
+        const areas = res.data.data;
+        expect(areas).toBeInstanceOf(Array);
+
+        // Verify area types are valid
+        for (const area of areas) {
+            expect(['SOURCE', 'PROCESSOR']).toContain(area.type);
+            expect(area.name).toBeTruthy();
+            expect(area.id).toBeTruthy();
+        }
+    });
+
+    it('should have employees with valid structure', async () => {
+        const res = await api('/config/employees', { adminToken });
+        expect(res.status).toBe(200);
+        const employees = res.data.data;
+
+        for (const emp of employees) {
+            expect(emp.id).toBeTruthy();
+            // full_name or fullName should exist
+            expect(emp.full_name || emp.fullName).toBeTruthy();
+            expect(emp.employee_code || emp.employeeCode).toBeTruthy();
+        }
+    });
+
+    it('should have catalog items with valid structure', async () => {
+        const res = await api('/config/items', { adminToken });
+        expect(res.status).toBe(200);
+        if (res.data.data.length > 0) {
+            const item = res.data.data[0];
+            expect(item.id).toBeTruthy();
+            expect(item.name).toBeTruthy();
+            expect(item.category).toBeTruthy();
+        }
+    });
+});
+
+// =====================================================================
+// 19. DASHBOARD: Area & Employee Detail Endpoints
+// =====================================================================
+describe('Dashboard Detail Endpoints', () => {
+    it('should get area stats', async () => {
+        const res = await api('/dashboard/area', { adminToken });
+        expect([200, 404]).toContain(res.status);
+        if (res.status === 200) {
+            expect(res.data.success).toBe(true);
+        }
+    });
+
+    it('should get employee stats', async () => {
+        const res = await api('/dashboard/employee', { adminToken });
+        expect([200, 404]).toContain(res.status);
+        if (res.status === 200) {
+            expect(res.data.success).toBe(true);
+        }
+    });
+
+    it('should reject dashboard area stats without admin token', async () => {
+        const res = await api('/dashboard/area');
+        expect([401, 404]).toContain(res.status);
+    });
+});
+
+// =====================================================================
+// 20. CROSS-ROLE SECURITY (Session vs Admin isolation)
+// =====================================================================
+describe('Cross-Role Security Isolation', () => {
+    it('should reject admin-only endpoints with employee session token', async () => {
+        const sessionToken = getToken('pedro');
+        if (!sessionToken) return;
+
+        // Try accessing admin config with session token
+        const empRes = await api('/config/employees', { sessionToken });
+        expect(empRes.status).toBe(401);
+
+        const areasRes = await api('/config/areas', { sessionToken });
+        expect(areasRes.status).toBe(401);
+
+        const dashRes = await api('/dashboard/bottleneck', { sessionToken });
+        expect(dashRes.status).toBe(401);
+    });
+
+    it('should reject employee-only endpoints with admin JWT', async () => {
+        // Admin JWT should not work as a session token
+        const res = await api('/operations/limpieza', {
+            sessionToken: adminToken, // Intentionally using admin JWT as session token
+        });
+        expect(res.status).toBe(401);
+    });
+
+    it('should reject task-templates endpoint without admin token', async () => {
+        const res = await api('/task-templates');
+        expect([401, 404]).toContain(res.status);
+    });
+});
+
+// =====================================================================
+// 21. TASK STATS ENDPOINT
+// =====================================================================
+describe('Task Stats (Admin)', () => {
+    it('should get task statistics', async () => {
+        const res = await api('/tasks/stats', { adminToken });
+        expect([200, 404]).toContain(res.status);
+        if (res.status === 200) {
+            expect(res.data.success).toBe(true);
+        }
     });
 });

@@ -5,7 +5,7 @@ import { Play, Sparkles, BedDouble, Plus, Minus, ArrowRight, Loader2, ArrowDownC
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '@/lib/api';
+import api, { apiRequest } from '@/lib/api';
 
 // from definitions in types/operations
 interface CatalogItem {
@@ -133,18 +133,29 @@ export default function CamarerasView() {
 
         setIsSubmitting(true);
         try {
-            const payloadItems = Object.entries(cycleItems).map(([item_id, quantity]) => ({
-                item_id,
-                quantity
-            }));
+            const itemsForLog = [];
+
+            for (const [item_id, quantity] of Object.entries(cycleItems)) {
+                if (quantity <= 0) continue;
+                itemsForLog.push({ item_id, quantity });
+            }
+
+            if (itemsForLog.length === 0) {
+                toast.error("No se encontraron prendas válidas para registrar.");
+                return;
+            }
 
             // Calc dispatch number roughly based on history length today
             const deliveryNumber = `Envío Lencería #${(status?.history?.length || 0) + 1}`;
 
-            await api.operations.housekeeping.log({
-                items: payloadItems,
-                notes: deliveryNumber
-            } as any);
+            // Send to housekeeping log endpoint (events-based system)
+            await apiRequest('/operations/housekeeping/log', {
+                method: 'POST',
+                body: JSON.stringify({
+                    items: itemsForLog,
+                    notes: deliveryNumber,
+                }),
+            });
 
             toast.success(
                 <div className="flex flex-col gap-1">

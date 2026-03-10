@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
     Plus, Search, User, Users, MoreVertical,
-    Trash2, RefreshCw, KeyRound, CheckCircle2, Eye, EyeOff
+    Trash2, RefreshCw, KeyRound, CheckCircle2, Eye, EyeOff, Clock, Sun, Moon, Sunset
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +15,20 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { configApi } from '@/lib/api';
 
+type ShiftType = 'MORNING' | 'AFTERNOON' | 'NIGHT';
+
+const SHIFT_CONFIG: Record<ShiftType, { label: string; icon: typeof Sun; color: string; bg: string }> = {
+    MORNING: { label: 'Mañana', icon: Sun, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+    AFTERNOON: { label: 'Tarde', icon: Sunset, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
+    NIGHT: { label: 'Noche', icon: Moon, color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
+};
+
 interface Employee {
     id: string;
     fullName: string;
     employeeCode: string;
     isActive: boolean;
-    // accessPinPlain removed
+    shift: ShiftType;
     areas?: { id: string; name: string }[];
 }
 
@@ -42,6 +50,7 @@ export default function EmployeesPage() {
     const [formData, setFormData] = useState({
         fullName: '',
         employeeCode: '',
+        shift: 'MORNING' as ShiftType,
         areaIds: [] as string[]
     });
 
@@ -65,6 +74,7 @@ export default function EmployeesPage() {
                 fullName: e.full_name || e.fullName || '',
                 employeeCode: e.employee_code || e.employeeCode || '',
                 isActive: e.is_active ?? e.isActive ?? true,
+                shift: e.shift || 'MORNING',
                 areas: e.areas?.map((a: any) => a.area || a) || [],
             }));
 
@@ -120,6 +130,7 @@ export default function EmployeesPage() {
         try {
             const payload = {
                 fullName: formData.fullName,
+                shift: formData.shift,
                 ...(formData.areaIds.length > 0 ? { areaIds: formData.areaIds } : {}),
                 ...(formData.employeeCode ? { employeeCode: formData.employeeCode } : {})
             };
@@ -139,7 +150,7 @@ export default function EmployeesPage() {
             );
 
             setIsCreateOpen(false);
-            setFormData({ fullName: '', employeeCode: '', areaIds: [] });
+            setFormData({ fullName: '', employeeCode: '', shift: 'MORNING', areaIds: [] });
             loadData();
 
         } catch (error: any) {
@@ -200,6 +211,16 @@ export default function EmployeesPage() {
         }
     };
 
+    const handleChangeShift = async (empId: string, newShift: ShiftType) => {
+        try {
+            await configApi.employees.update(empId, { shift: newShift });
+            toast.success(`Turno cambiado a ${SHIFT_CONFIG[newShift].label}`);
+            loadData();
+        } catch {
+            toast.error('Error al cambiar turno');
+        }
+    };
+
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.preventDefault();
         if (!confirm('¿Estás seguro de eliminar permanentemente a este colaborador? Esta acción no se puede deshacer.')) return;
@@ -257,6 +278,29 @@ export default function EmployeesPage() {
                                             className="h-10 bg-slate-50/50 border-slate-200 focus:bg-white transition-all"
                                             required
                                         />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-700">Turno</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {(Object.entries(SHIFT_CONFIG) as [ShiftType, typeof SHIFT_CONFIG[ShiftType]][]).map(([key, cfg]) => {
+                                            const Icon = cfg.icon;
+                                            return (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, shift: key })}
+                                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${formData.shift === key
+                                                        ? `${cfg.bg} ${cfg.color} shadow-sm ring-1 ring-current/20`
+                                                        : 'border-slate-200 hover:bg-slate-50 text-slate-500'
+                                                        }`}
+                                                >
+                                                    <Icon className="w-5 h-5" />
+                                                    <span className="text-xs font-bold">{cfg.label}</span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -362,11 +406,20 @@ export default function EmployeesPage() {
                                     <Users className="w-3.5 h-3.5 text-slate-400" />
                                     {emp.areas?.length ? emp.areas.map(a => a.name).join(', ') : <span className="text-amber-500">Sin área</span>}
                                 </div>
-                                {emp.isActive ? (
-                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">ACTIVO</span>
-                                ) : (
-                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">INACTIVO</span>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {(() => {
+                                        const cfg = SHIFT_CONFIG[emp.shift]; const Icon = cfg.icon; return (
+                                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.color}`}>
+                                                <Icon className="w-3 h-3" />{cfg.label}
+                                            </span>
+                                        );
+                                    })()}
+                                    {emp.isActive ? (
+                                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">ACTIVO</span>
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">INACTIVO</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))
@@ -378,9 +431,9 @@ export default function EmployeesPage() {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-100">
-                            <TableHead className="w-[350px] py-4 pl-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">Colaborador</TableHead>
+                            <TableHead className="w-[300px] py-4 pl-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">Colaborador</TableHead>
                             <TableHead className="py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Credencial (ID)</TableHead>
-                            {/* PIN Column Removed */}
+                            <TableHead className="py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Turno</TableHead>
                             <TableHead className="py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Estado</TableHead>
                             <TableHead className="text-right py-4 pr-6 font-semibold text-slate-500 text-xs uppercase tracking-wider">Acciones</TableHead>
                         </TableRow>
@@ -420,7 +473,15 @@ export default function EmployeesPage() {
                                             {emp.employeeCode}
                                         </Badge>
                                     </TableCell>
-                                    {/* PIN Cell Removed */}
+                                    <TableCell>
+                                        {(() => {
+                                            const cfg = SHIFT_CONFIG[emp.shift]; const Icon = cfg.icon; return (
+                                                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${cfg.bg} ${cfg.color}`}>
+                                                    <Icon className="w-3.5 h-3.5" />{cfg.label}
+                                                </span>
+                                            );
+                                        })()}
+                                    </TableCell>
                                     <TableCell>
                                         {emp.isActive ? (
                                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -441,10 +502,29 @@ export default function EmployeesPage() {
                                                     <MoreVertical className="w-4 h-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 shadow-xl border-slate-100 p-1">
+                                            <DropdownMenuContent align="end" className="w-52 shadow-xl border-slate-100 p-1">
                                                 <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleResetPin(emp.id, e); }} className="cursor-pointer font-medium p-2 text-slate-700 focus:bg-slate-50">
                                                     <KeyRound className="w-4 h-4 mr-2 text-slate-400" /> Regenerar PIN
                                                 </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="bg-slate-50 my-1" />
+                                                <div className="px-2 py-1.5">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cambiar Turno</span>
+                                                    <div className="flex gap-1 mt-1.5">
+                                                        {(Object.entries(SHIFT_CONFIG) as [ShiftType, typeof SHIFT_CONFIG[ShiftType]][]).map(([key, cfg]) => {
+                                                            const Icon = cfg.icon;
+                                                            return (
+                                                                <button
+                                                                    key={key}
+                                                                    onClick={() => handleChangeShift(emp.id, key)}
+                                                                    className={`flex-1 flex flex-col items-center gap-0.5 p-1.5 rounded-lg text-[10px] font-bold transition-all ${emp.shift === key ? `${cfg.bg} ${cfg.color} border` : 'hover:bg-slate-50 text-slate-400 border border-transparent'
+                                                                        }`}
+                                                                >
+                                                                    <Icon className="w-3.5 h-3.5" />{cfg.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                                 <DropdownMenuSeparator className="bg-slate-50 my-1" />
                                                 <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer font-medium p-2" onClick={(e) => { e.preventDefault(); handleDelete(emp.id, e); }}>
                                                     <Trash2 className="w-4 h-4 mr-2" /> Eliminar Cuenta
@@ -458,7 +538,7 @@ export default function EmployeesPage() {
 
                         {!isLoading && filteredEmployees.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-64 text-center">
+                                <TableCell colSpan={5} className="h-64 text-center">
                                     <div className="flex flex-col items-center justify-center text-slate-400 max-w-sm mx-auto">
                                         <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
                                             <Search className="w-6 h-6 opacity-50" />
