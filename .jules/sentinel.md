@@ -1,0 +1,4 @@
+## 2024-05-14 - Fix error handling leaking stack traces
+**Vulnerability:** The application was logging and returning the full error stack (`error.stack`) to the client on a 500 server error within `frontend/src/app/api/rooms/route.ts` and logging it in the generic API fetch handler `frontend/src/lib/api.ts`.
+**Learning:** Returning stack traces allows external clients (or attackers) to map out application structure, directory paths, dependency versions, and internal mechanisms. Additionally, accessing `error.stack` implicitly can be unstable if the error object wasn't correctly instantiated. It's safe to just rely on `error.message` for client-side feedback.
+**Prevention:** Always sanitize API responses to return generic error messages to the client and maintain comprehensive error logging strictly server-side. Wait to explicitly include `stack` in `console.error` if logging raw `error` is generally safer.
