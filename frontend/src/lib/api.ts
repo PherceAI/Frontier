@@ -97,7 +97,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
             throw new Error(`No se pudo conectar con el servidor (${API_URL}). Verifica que el backend esté corriendo.`);
         }
 
-        console.error('[System Error]', { endpoint, error, stack: error.stack });
+        console.error('[System Error]', { endpoint, error });
         throw error;
     }
 }
