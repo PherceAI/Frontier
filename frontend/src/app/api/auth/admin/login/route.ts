@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, signJwt, signRefreshToken } from '@/lib/auth/helpers';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        // Apply rate limit: max 5 requests per 1 minute window
+        if (!rateLimit(request, { limit: 5, windowMs: 60 * 1000 })) {
+            return NextResponse.json(
+                { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Demasiados intentos. Por favor, inténtalo de nuevo más tarde.' } },
+                { status: 429 }
+            );
+        }
+
         const { email, password } = await request.json();
 
         if (!email || !password) {
