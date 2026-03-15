@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, signJwt, signRefreshToken } from '@/lib/auth/helpers';
+import { loginRateLimiter } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        const rateLimitResult = loginRateLimiter.check(request);
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Demasiados intentos de login. Intente de nuevo más tarde.' } },
+                { status: 429, headers: { 'Retry-After': Math.ceil((rateLimitResult.reset - Date.now()) / 1000).toString() } }
+            );
+        }
+
         const { email, password } = await request.json();
 
         if (!email || !password) {
