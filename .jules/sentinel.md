@@ -1,0 +1,4 @@
+## 2024-03-18 - [CRITICAL] Fix IDOR in Task Checklist Item Updates
+**Vulnerability:** Insecure Direct Object Reference (IDOR) on task checklist item updates (`/api/my-tasks/[id]/checklist/[itemId]` and `/api/operations/tasks/[taskId]/items/[itemId]`). Endpoints allowed modifying items globally via predictable auto-increment `itemId`s without validating ownership.
+**Learning:** `findUniqueOrThrow` querying purely by the primary key is insecure in multi-tenant operations unless you also enforce the relation constraints, specifically checking that the item belongs to the expected `company_id` and (where applicable) `assigned_to` the calling user.
+**Prevention:** Instead of `findUniqueOrThrow(itemId)`, always use `findFirstOrThrow` to construct queries that enforce tenant isolation by verifying the relational tree, e.g., `where: { id: itemId, task: { company_id: auth.company_id } }`.
