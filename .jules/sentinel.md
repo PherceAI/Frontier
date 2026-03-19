@@ -1,0 +1,4 @@
+## 2024-03-19 - Missing Rate Limiting on Authentication Endpoints
+**Vulnerability:** The authentication endpoints (`/api/auth/pin/login` and `/api/auth/admin/login`) lacked any explicit rate limiting logic to restrict multiple attempts.
+**Learning:** This exposes the application to brute-force attacks, credential stuffing, and potentially denial-of-service (DoS) on backend authentication processes (especially the O(N) PIN lookup bottleneck). Next.js API routes require custom implementation for rate limiting, and caching/eviction must be properly handled to prevent memory exhaustion (e.g. using an LRU eviction strategy).
+**Prevention:** Implement and enforce robust IP-based or identifier-based rate limiting using centralized utilities (e.g., a `RateLimiter` class with LRU cache logic and testing bypasses) across all sensitive or computationally expensive routes. Always handle `x-forwarded-for` properly when extracting client IPs in reverse-proxied environments.
