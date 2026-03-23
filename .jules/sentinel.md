@@ -1,0 +1,4 @@
+## 2023-10-27 - [Add rate limiting to auth endpoints]
+**Vulnerability:** The PIN and admin authentication endpoints lacked rate limiting, exposing them to brute-force attacks and potential DoS (especially given the O(N) PIN comparison).
+**Learning:** Next.js API routes need custom rate limiting if not using edge middleware. Relying solely on `req.ip` is insufficient behind proxies; parsing `x-forwarded-for` is necessary. Also, an in-memory Map for rate limiting must implement an eviction strategy (like LRU) to prevent OOM memory exhaustion from spoofed IPs.
+**Prevention:** Implement a standard rate limiter utility (`src/lib/rate-limit.ts`) and apply it consistently across all sensitive or computationally expensive endpoints. Ensure tests can bypass it by checking `process.env.NODE_ENV === 'test'`.
