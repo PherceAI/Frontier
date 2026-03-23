@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/helpers';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        const rateLimitResponse = checkRateLimit(request, 5, 60000); // 5 attempts per minute
+        if (rateLimitResponse) return rateLimitResponse;
+
         const { pin } = await request.json();
         if (!pin) {
             return NextResponse.json(
