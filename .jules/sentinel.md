@@ -1,0 +1,4 @@
+## 2024-05-24 - Rate Limiting LRU Eviction to Prevent DoS
+**Vulnerability:** Missing rate limiting on authentication endpoints allowing brute-force, coupled with the risk of DoS via memory exhaustion if a Map-based rate limiter doesn't bound its size when IP spoofing is possible.
+**Learning:** When implementing in-memory rate limiting using a Map, it's crucial to implement an LRU (Least Recently Used) eviction strategy or a hard size limit (`maxCacheSize`). Without this, an attacker spoofing IPs can cause the Node.js process to run out of memory (OOM), turning a brute-force mitigation into a DoS vector.
+**Prevention:** Always enforce a maximum cache size (`if (cache.size > maxCacheSize)`) and evict the oldest entries (`cache.delete(cache.keys().next().value)`) when using Map-based tracking for external IPs.
