@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/helpers';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
+        const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1';
+
+        // Rate limit: 5 attempts per minute per IP
+        if (rateLimit(ip, 5, 60000)) {
+            return NextResponse.json(
+                { success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Demasiados intentos. Por favor espere un momento.' } },
+                { status: 429 }
+            );
+        }
+
         const { pin } = await request.json();
         if (!pin) {
             return NextResponse.json(
