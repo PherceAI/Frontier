@@ -1,0 +1,4 @@
+## 2024-05-24 - Rate Limiting Added to Login Endpoints
+**Vulnerability:** The authentication endpoints (`/api/auth/pin/login/route.ts` and `/api/auth/admin/login/route.ts`) were vulnerable to brute-force attacks due to missing rate limiting logic. This vulnerability was exacerbated by the `O(N)` DB iteration in the PIN login endpoint when there's an IP guessing sequentially.
+**Learning:** In Next.js App Router environments, obtaining the correct IP address requires parsing headers like `x-forwarded-for` to prevent IP spoofing, and falling back safely. Moreover, custom in-memory rate limiters must implement a maximum size to prevent memory exhaustion (DoS attacks) and have bypasses for testing environments.
+**Prevention:** Implement an LRU-based in-memory rate limiter on sensitive authentication endpoints, limiting login attempts and parsing the IP correctly.
