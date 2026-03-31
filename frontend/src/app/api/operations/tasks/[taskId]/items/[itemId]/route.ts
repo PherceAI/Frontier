@@ -11,6 +11,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json();
 
+    // Verify task belongs to the company before updating the item
+    await prisma.taskChecklistItem.findFirstOrThrow({
+        where: { id: parseInt(itemId), task: { id: taskId, company_id: auth.employee.company_id } }
+    });
+
     const data = await prisma.taskChecklistItem.update({
         where: { id: parseInt(itemId) },
         data: { is_completed: body.is_completed, completed_at: body.is_completed ? new Date() : null },
