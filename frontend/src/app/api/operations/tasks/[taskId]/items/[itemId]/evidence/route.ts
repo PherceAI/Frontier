@@ -26,7 +26,14 @@ export async function POST(request: NextRequest, { params }: Params) {
         const buffer = Buffer.from(await file.arrayBuffer());
 
         const checklistItem = await prisma.taskChecklistItem.findFirst({
-            where: { id: itemIdNum, task_id: taskId },
+            where: {
+                id: itemIdNum,
+                task_id: taskId,
+                task: {
+                    assigned_to: authData.employee.id,
+                    company_id: authData.employee.company_id,
+                }
+            },
             include: { task: true }
         });
 
