@@ -94,6 +94,6 @@ export async function POST(request: NextRequest, { params }: Params) {
         return NextResponse.json({ success: true, url: webViewLink });
     } catch (error: any) {
         console.error('[EVIDENCE UPLOAD ERROR]', error);
-        return NextResponse.json({ success: false, error: error?.message || 'Error conectando a n8n u OAuth' }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Error interno del servidor al procesar la evidencia' }, { status: 500 });
     }
 }
