@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     } catch (error: any) {
         console.error('[TASK EVIDENCE UPLOAD ERROR]', error);
         return NextResponse.json(
-            { success: false, error: error?.message || 'Error procesando evidencia' },
+            { success: false, error: 'Error interno del servidor al procesar la evidencia' },
             { status: 500 }
         );
     }
