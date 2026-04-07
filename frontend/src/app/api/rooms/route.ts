@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
     const dbPassword = process.env.SUPABASE_PASSWORD;
 
     if (!host || !dbUser || !dbPassword) {
-        return NextResponse.json({ success: false, error: { code: 'CONFIG_ERROR', message: 'Missing Supabase credentials' } }, { status: 500 });
+        console.error('Missing Supabase credentials');
+        return NextResponse.json({ success: false, error: { code: 'CONFIG_ERROR', message: 'Error de configuración del servidor.' } }, { status: 500 });
     }
 
     const client = new Client({
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: true, data: rooms });
     } catch (error: any) {
         console.error('Supabase query error:', error);
-        return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message, stack: error.stack } }, { status: 500 });
+        return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: 'Error interno del servidor al consultar la base de datos.' } }, { status: 500 });
     } finally {
         await client.end();
     }
