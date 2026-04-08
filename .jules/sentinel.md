@@ -1,0 +1,4 @@
+## 2024-04-08 - Rate Limiting Added to Authentication Endpoints
+**Vulnerability:** The employee PIN login endpoint (`/api/auth/pin/login/route.ts`) was performing an O(N) database query to iterate over all active employees and compare bcrypt hashes for each login attempt. This lacked rate limiting, allowing brute-force attacks and global lockout DoS attacks. Admin login was similarly exposed.
+**Learning:** In-memory rate limiting implementation requires a bounded map (LRU cache) to prevent OOM exhaustion. In Next.js App Router, `req.ip` is unreliable and requires safe extraction from headers (`x-forwarded-for`, etc.) and type casting.
+**Prevention:** Implement a secure, bounded LRU cache-based rate limiter (e.g., `RateLimiter` class) and apply it to all authentication endpoints prior to executing database queries or expensive crypto operations.
