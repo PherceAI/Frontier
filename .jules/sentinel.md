@@ -1,0 +1,4 @@
+## 2024-04-13 - [Information Leakage in Supabase Rooms Endpoint]
+**Vulnerability:** The GET endpoint in `frontend/src/app/api/rooms/route.ts` directly passed the underlying Supabase database connection error message and the JavaScript stack trace to the client inside the JSON response during catch blocks.
+**Learning:** Returning unhandled database driver error stacks and explicit failure reasons directly compromises back-end security by exposing deep technical structures and potentially leaking data structure details out to the frontend during failures. Catch blocks mapping to 500 server errors should return a sanitized `message`.
+**Prevention:** Avoid interpolating `error.message` or `error.stack` inside `NextResponse.json` for 500 Server Errors, and instead substitute it with a generic, localized user-facing message, while logging the verbose original `error` server-side using `console.error`.
