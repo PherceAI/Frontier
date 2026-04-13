@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: true, data: rooms });
     } catch (error: any) {
         console.error('Supabase query error:', error);
-        return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message, stack: error.stack } }, { status: 500 });
+        return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: 'Error interno de la base de datos' } }, { status: 500 });
     } finally {
         await client.end();
     }
