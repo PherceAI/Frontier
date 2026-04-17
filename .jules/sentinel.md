@@ -1,0 +1,4 @@
+## 2024-04-17 - Insecure Direct Object Reference (IDOR) in Nested Task Endpoints
+**Vulnerability:** IDOR in `/api/my-tasks/[id]/checklist/[itemId]/route.ts` and `/api/my-tasks/[id]/complete/route.ts` where actions were performed solely based on resource IDs without validating ownership against the authenticated employee or company ID.
+**Learning:** In multi-tenant environments, or where resources are assigned specifically to individuals, verifying an action through `findUniqueOrThrow` using only the ID allows any authenticated user to potentially modify another's data. Nested routes often imply a relational dependency (e.g. `itemId` belongs to `id`) which must be explicitly checked.
+**Prevention:** Always use `findFirstOrThrow` with the resource ID, parent ID (if nested), `company_id`, and `assigned_to` fields populated from the authenticated context (like `auth.employee.id` and `auth.employee.company_id`) to correctly enforce data isolation and authorization.
