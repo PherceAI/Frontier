@@ -1,0 +1,4 @@
+## 2026-04-18 - Prevent IDOR in Nested Task Resource Endpoints
+**Vulnerability:** Insecure Direct Object Reference (IDOR) found in `my-tasks` and `operations` item completion endpoints where database entities were updated using only the ID from the URL path without enforcing ownership or relation validation.
+**Learning:** Prisma's `update` block relies strictly on unique identifiers. Therefore, it implicitly bypassed relationship verification (e.g., verifying an `itemId` belongs to the correct `taskId` and correct `company_id` or `assigned_to`).
+**Prevention:** Establish a project-wide pattern: before any unique identifier mutation using `prisma.*.update({ where: { id } })`, execute a `prisma.*.findFirstOrThrow` query that explicitly asserts the entire contextual authorization hierarchy (e.g., `taskId`, `assigned_to`, `company_id`).

@@ -10,7 +10,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(auth)) return auth;
     const { id } = await params;
 
-    const task = await prisma.task.findFirstOrThrow({ where: { id, assigned_to: auth.employee.id } });
+    const task = await prisma.task.findFirstOrThrow({ where: { id, assigned_to: auth.employee.id, company_id: auth.employee.company_id } });
 
     const data = await prisma.task.update({
         where: { id },
