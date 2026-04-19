@@ -1,0 +1,5 @@
+
+## $(date +%Y-%m-%d) - Prevent IDOR in Nested Task Checklist Endpoints
+**Vulnerability:** The API endpoints for updating checklist items (`/api/my-tasks/[id]/checklist/[itemId]` and `/api/operations/tasks/[taskId]/items/[itemId]`) used `findUniqueOrThrow` to blindly trust the user-provided `itemId`, allowing users to modify checklist items that didn't belong to the `taskId` specified in the path, or tasks that they were not authorized to access.
+**Learning:** In relational endpoints, validating the parent entity (the task) is insufficient if the query for the child entity (the checklist item) only queries by `itemId`. The relationship between the parent and child (e.g. `task_id = taskId`) and the authorization context (e.g. `company_id` and `assigned_to`) must be enforced in the single query that looks up the child entity.
+**Prevention:** Use `findFirstOrThrow` rather than `findUniqueOrThrow` to explicitly include parent relationships and context authorization limits inside the `where` clause.
