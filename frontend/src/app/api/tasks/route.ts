@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     let templateAreaId: string | null = null;
 
     if (template_id) {
-        const template = await prisma.taskTemplate.findUnique({ where: { id: template_id } });
+        const template = await prisma.taskTemplate.findUnique({ where: { id: template_id, company_id: user.company_id } });
         if (template) {
             if (!checklist.length) templateChecklist = (template.checklist_template as typeof templateChecklist) ?? [];
             if (!rest.area_id) templateAreaId = template.area_id ?? null;
