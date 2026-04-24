@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         const fileBuffer = await file.arrayBuffer();
         const mimeType = file.type || 'image/jpeg';
 
-        const task = await prisma.task.findUnique({ where: { id: taskId } });
+        const task = await prisma.task.findUnique({ where: { id: taskId, company_id: authData.employee.company_id } });
         if (!task) {
             return NextResponse.json(
                 { success: false, error: 'Tarea no encontrada' },
