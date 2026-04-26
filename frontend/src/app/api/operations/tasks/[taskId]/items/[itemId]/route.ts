@@ -9,6 +9,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(auth)) return auth;
     const { taskId, itemId } = await params;
 
+    await prisma.task.findFirstOrThrow({
+        where: { id: taskId, company_id: auth.employee.company_id },
+    });
+
+    await prisma.taskChecklistItem.findFirstOrThrow({
+        where: { id: parseInt(itemId), task_id: taskId },
+    });
+
     const body = await request.json();
 
     const data = await prisma.taskChecklistItem.update({
