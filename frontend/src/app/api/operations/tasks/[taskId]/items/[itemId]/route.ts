@@ -11,8 +11,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json();
 
+    // SECURITY EXPLANATION: Prevent IDOR by ensuring the checklist item belongs to the requested task,
+    // and the task belongs to the company of the currently authenticated session.
+    const item = await prisma.taskChecklistItem.findFirstOrThrow({
+        where: {
+            id: parseInt(itemId),
+            task_id: taskId,
+            task: {
+                company_id: auth.employee.company_id,
+            },
+        },
+    });
+
     const data = await prisma.taskChecklistItem.update({
-        where: { id: parseInt(itemId) },
+        where: { id: item.id },
         data: { is_completed: body.is_completed, completed_at: body.is_completed ? new Date() : null },
     });
 

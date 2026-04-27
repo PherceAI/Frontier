@@ -10,7 +10,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { taskId } = await params;
 
     const body = await request.json();
-    const existing = await prisma.task.findFirstOrThrow({ where: { id: taskId } });
+
+    // SECURITY EXPLANATION: Prevent IDOR by ensuring the task belongs to the company of the currently authenticated session.
+    const existing = await prisma.task.findFirstOrThrow({
+        where: {
+            id: taskId,
+            company_id: auth.employee.company_id,
+        },
+    });
+
     const updateData: Record<string, unknown> = { ...body };
 
     if (body.status === 'IN_PROGRESS' && !existing.started_at) updateData.started_at = new Date();
