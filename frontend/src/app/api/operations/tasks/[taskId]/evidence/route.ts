@@ -72,10 +72,10 @@ export async function POST(request: NextRequest, { params }: Params) {
             analyzing: true,
             message: 'Foto recibida. El análisis de IA se está procesando en segundo plano.',
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[TASK EVIDENCE UPLOAD ERROR]', error);
         return NextResponse.json(
-            { success: false, error: error?.message || 'Error procesando evidencia' },
+            { success: false, error: 'Error procesando evidencia de la tarea' },
             { status: 500 }
         );
     }
