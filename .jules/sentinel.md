@@ -1,0 +1,4 @@
+## 2024-05-04 - [Prisma Nested Resource IDOR vulnerabilities]
+**Vulnerability:** IDOR (Insecure Direct Object Reference) vulnerabilities were found in nested endpoints, such as `tasks/[taskId]/items/[itemId]`. The `prisma.taskChecklistItem.update` was using only the primary key `itemId` without validating ownership context.
+**Learning:** In a multi-tenant Prisma setup with Next.js API Routes, updating child records based purely on the `id` allows IDOR. It is necessary to query `company_id` implicitly via relations (e.g. `task: { company_id }`) and validating the relationship between `taskId` and `itemId`.
+**Prevention:** Always prefix updates of nested resources with an authorization check using `prisma.model.findFirstOrThrow` that explicitly verifies both the parent ID constraint (e.g. `task_id: taskId`) AND the tenant isolation constraint (e.g. `task: { company_id: auth.company_id }`).
