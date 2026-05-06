@@ -1,0 +1,4 @@
+## 2025-05-06 - Prevent IDOR in Nested Task Endpoints
+**Vulnerability:** Insecure Direct Object Reference (IDOR) on nested resources where `update` queries were executed using `findUniqueOrThrow` just by resource ID.
+**Learning:** For endpoints acting on nested resources (like `tasks/[taskId]/items/[itemId]`), or top level operations belonging to users or companies (like `/my-tasks/[id]`), Prisma's `update` and `delete` functions only enforce authorization if preceded by `findFirstOrThrow` with the appropriate relations (like `assigned_to` and `company_id`). Without this, a user might access/update another user's or company's items if they know the ID.
+**Prevention:** Always scope Prisma queries and updates for resources using `findFirstOrThrow` with `company_id` and relationship attributes ensuring tenant isolation.
