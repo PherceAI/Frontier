@@ -11,6 +11,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json().catch(() => ({}));
 
+    // Verify task is assigned to the current user before completing (IDOR fix)
+    await prisma.task.findFirstOrThrow({
+        where: { id, assigned_to: auth.employee.id }
+    });
+
     const data = await prisma.task.update({
         where: { id },
         data: { status: 'COMPLETED', completed_at: new Date(), completion_notes: body.completion_notes ?? body.notes ?? null },
