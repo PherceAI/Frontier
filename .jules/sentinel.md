@@ -1,0 +1,4 @@
+## 2024-05-24 - Missing Assignee and Tenant Checks in Checklist Updates
+**Vulnerability:** IDOR in the endpoint for updating task checklist items (`/api/my-tasks/[id]/checklist/[itemId]`). The endpoint simply updated the checklist item by its ID without verifying if the item actually belonged to the `task_id` in the URL, nor if the task belonged to the user's `company_id` and was assigned to them.
+**Learning:** In a multi-tenant application with nested resources (e.g. Task -> ChecklistItem), using `findUniqueOrThrow` with just the child resource ID exposes the application to IDOR. We must explicitly verify the relationship tree up to the tenant root (or the ownership scope).
+**Prevention:** Always use `findFirstOrThrow` with deep nested relations check, e.g. `task: { company_id: user.company_id, assigned_to: user.id }`, and also assert `task_id` matches the route parameter to prevent cross-resource manipulation.
