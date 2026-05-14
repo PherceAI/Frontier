@@ -1,0 +1,5 @@
+
+## 2024-05-18 - Missing IDOR prevention in Task Checklist Updates
+**Vulnerability:** The endpoints `/api/operations/tasks/[taskId]/items/[itemId]/route.ts` and `/api/my-tasks/[id]/checklist/[itemId]/route.ts` were updating checklist items solely based on `itemId` and whether the authenticated user was assigned to the *parent task*, without actually verifying that the `itemId` belonged to that `taskId` or `company_id`.
+**Learning:** In nested routes (e.g., parent/child resources), it is not enough to verify the user has access to the parent resource. The database query must explicitly enforce the relationship (e.g., `task_id: taskId`) AND tenant isolation (`company_id: auth.employee.company_id`) within the same `findFirstOrThrow` query before updating the child item.
+**Prevention:** Always use `findFirstOrThrow` to validate ownership of nested child objects by tying them explicitly to the parent object's ID, the tenant `company_id`, and user ownership before executing Prisma `update` or `delete` methods.
