@@ -1,0 +1,4 @@
+## 2025-05-18 - [IDOR in Operational Task Items Endpoint]
+**Vulnerability:** Insecure Direct Object Reference (IDOR) and missing company isolation in the `PATCH /api/operations/tasks/[taskId]/items/[itemId]/route.ts` endpoint.
+**Learning:** The task item update endpoint was updating the database using `update({ where: { id: itemId } })` without checking if the task item belonged to the current user's company (`company_id`) or was assigned to the user. This allowed any authenticated employee to update checklist items for any task across all companies if they knew the `itemId`.
+**Prevention:** Always verify ownership and tenant isolation (`company_id`) when fetching or updating resources using `findFirstOrThrow` with the appropriate filters (e.g., `where: { id: itemId, task: { company_id: authData.employee.company_id } }`).
