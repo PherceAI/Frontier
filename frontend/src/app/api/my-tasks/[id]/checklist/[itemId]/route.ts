@@ -7,12 +7,27 @@ type Params = { params: Promise<{ id: string; itemId: string }> };
 export async function PATCH(request: NextRequest, { params }: Params) {
     const auth = await requireSession(request);
     if (isErrorResponse(auth)) return auth;
-    const { itemId } = await params;
+    const { id, itemId } = await params;
 
-    const item = await prisma.taskChecklistItem.findUniqueOrThrow({ where: { id: parseInt(itemId) } });
+    // First ensure the user has access to the parent task
+    await prisma.task.findFirstOrThrow({
+        where: {
+            id,
+            assigned_to: auth.employee.id,
+            company_id: auth.employee.company_id,
+        },
+    });
+
+    // Then find the item ensuring it belongs to the verified parent task
+    const item = await prisma.taskChecklistItem.findFirstOrThrow({
+        where: {
+            id: parseInt(itemId),
+            task_id: id,
+        },
+    });
 
     const data = await prisma.taskChecklistItem.update({
-        where: { id: parseInt(itemId) },
+        where: { id: item.id },
         data: { is_completed: !item.is_completed, completed_at: !item.is_completed ? new Date() : null },
     });
 
