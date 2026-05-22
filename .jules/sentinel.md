@@ -1,0 +1,4 @@
+## 2026-05-22 - Prevent DoS via Rate Limiter OOM
+**Vulnerability:** Implementing an in-memory rate limiter using a simple Map without bounds constraints can lead to Out of Memory (OOM) exhaustion and global lockout DoS attacks when malicious actors spoof IP addresses.
+**Learning:** Even simple security controls like rate limiting must implement resource bounds. In JavaScript/TypeScript, a Map object can grow infinitely unless managed. Without an eviction strategy, spoofed IPs generate infinite distinct keys, consuming memory until the Node process crashes.
+**Prevention:** Always implement an LRU (Least Recently Used) eviction strategy or use a mature library with bounded memory limits when implementing in-memory caching or rate limiting. Rejecting requests immediately when the limit is hit is insufficient if the map keeps tracking the new keys.
