@@ -1,0 +1,4 @@
+## 2026-05-26 - [IDOR in Task Checklist Endpoint]
+**Vulnerability:** Insecure Direct Object Reference (IDOR) in `/api/my-tasks/[id]/checklist/[itemId]` allowed an authenticated employee to modify checklist items belonging to other tasks or tasks in other companies, by manipulating the `itemId` parameter without verifying the ownership of the parent task.
+**Learning:** When dealing with nested resources, it's crucial to verify the full relationship chain. Validating only the parent resource ID is insufficient if the child resource ID is not scoped to that parent, and a `findUniqueOrThrow` solely on the child's primary key allows cross-tenant or cross-user modifications.
+**Prevention:** Enforce relationship bounds and tenant isolation by using `findFirstOrThrow` to verify the parent resource belongs to the current user/company context, and that the child resource explicitly belongs to the parent resource (`task_id: id`).
