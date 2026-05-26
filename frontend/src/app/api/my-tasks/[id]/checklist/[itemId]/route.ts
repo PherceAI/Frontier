@@ -7,9 +7,17 @@ type Params = { params: Promise<{ id: string; itemId: string }> };
 export async function PATCH(request: NextRequest, { params }: Params) {
     const auth = await requireSession(request);
     if (isErrorResponse(auth)) return auth;
-    const { itemId } = await params;
+    const { id, itemId } = await params;
 
-    const item = await prisma.taskChecklistItem.findUniqueOrThrow({ where: { id: parseInt(itemId) } });
+    // Verify task belongs to employee and their company to prevent IDOR
+    await prisma.task.findFirstOrThrow({
+        where: { id, assigned_to: auth.employee.id, company_id: auth.employee.company_id }
+    });
+
+    // Verify item belongs to the task to prevent nested IDOR
+    const item = await prisma.taskChecklistItem.findFirstOrThrow({
+        where: { id: parseInt(itemId), task_id: id }
+    });
 
     const data = await prisma.taskChecklistItem.update({
         where: { id: parseInt(itemId) },
