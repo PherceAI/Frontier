@@ -1,0 +1,4 @@
+## 2024-05-27 - IDOR in Nested Prisma Endpoints
+**Vulnerability:** Insecure Direct Object Reference (IDOR) vulnerabilities existed in nested operations routes (e.g., `/api/my-tasks/[id]/checklist/[itemId]`). Updates were performed using `findUniqueOrThrow` with only the child entity's primary key (`itemId`), lacking authorization checks on the parent entity's context (e.g., `company_id` and `assigned_to` on the task).
+**Learning:** Checking authorization only at the top of an endpoint is insufficient for nested resources. Database queries must explicitly enforce relationship bounds. Relying on `findUniqueOrThrow` with a single primary key prevents adding non-unique tenant isolation checks.
+**Prevention:** Always use `findFirstOrThrow` rather than `findUniqueOrThrow` when querying nested entities to enforce tenant and parent resource checks (e.g., `where: { id: itemId, task: { company_id: user.company_id } }`) before executing updates or deletes.
