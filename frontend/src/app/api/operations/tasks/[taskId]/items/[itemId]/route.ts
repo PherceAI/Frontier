@@ -9,10 +9,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(auth)) return auth;
     const { taskId, itemId } = await params;
 
+    const item = await prisma.taskChecklistItem.findFirstOrThrow({
+        where: {
+            id: parseInt(itemId),
+            task_id: taskId,
+            task: {
+                company_id: auth.employee.company_id,
+            }
+        }
+    });
+
     const body = await request.json();
 
     const data = await prisma.taskChecklistItem.update({
-        where: { id: parseInt(itemId) },
+        where: { id: item.id },
         data: { is_completed: body.is_completed, completed_at: body.is_completed ? new Date() : null },
     });
 
