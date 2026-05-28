@@ -1,0 +1,4 @@
+## 2026-05-28 - [HIGH] Fix IDOR in Task Evidence Upload
+**Vulnerability:** The `/api/operations/tasks/[taskId]/evidence` endpoint queried the `Task` model using `findUnique` with only the `taskId` from the request parameters. It failed to verify that the task belonged to the user's company or was assigned to the authenticated user, allowing any user to upload evidence to any task via IDOR.
+**Learning:** Relying solely on unique resource IDs for database lookups in multi-tenant or multi-user environments bypasses authorization constraints.
+**Prevention:** When enforcing tenant isolation or relationship bounds, queries must use `findFirst` (or `findFirstOrThrow`) and explicitly include authorization filters (e.g., `company_id` and `assigned_to`) in the `where` clause to ensure the resource is scoped correctly to the current context.

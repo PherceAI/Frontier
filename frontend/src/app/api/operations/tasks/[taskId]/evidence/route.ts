@@ -35,10 +35,18 @@ export async function POST(request: NextRequest, { params }: Params) {
         const fileBuffer = await file.arrayBuffer();
         const mimeType = file.type || 'image/jpeg';
 
-        const task = await prisma.task.findUnique({ where: { id: taskId } });
+        // Sentinel IDOR Prevention: verify company isolation and assignee logic
+        const task = await prisma.task.findFirst({
+            where: {
+                id: taskId,
+                company_id: authData.employee.company_id,
+                assigned_to: authData.employee.id
+            }
+        });
+
         if (!task) {
             return NextResponse.json(
-                { success: false, error: 'Tarea no encontrada' },
+                { success: false, error: 'Tarea no encontrada o acceso denegado' },
                 { status: 404 }
             );
         }
@@ -72,10 +80,10 @@ export async function POST(request: NextRequest, { params }: Params) {
             analyzing: true,
             message: 'Foto recibida. El análisis de IA se está procesando en segundo plano.',
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error('[TASK EVIDENCE UPLOAD ERROR]', error);
         return NextResponse.json(
-            { success: false, error: error?.message || 'Error procesando evidencia' },
+            { success: false, error: error instanceof Error ? error.message : 'Error procesando evidencia' },
             { status: 500 }
         );
     }
@@ -136,7 +144,7 @@ function processN8nInBackground(
             return;
         }
 
-        let n8nData: any;
+        let n8nData: Record<string, unknown>;
         try {
             n8nData = JSON.parse(rawBody);
         } catch {
@@ -151,9 +159,9 @@ function processN8nInBackground(
             return;
         }
 
-        const webViewLink = n8nData.url;
-        const analysis = n8nData.analysis || null;
-        const aiStatus = n8nData.status || 'UNKNOWN';
+        const webViewLink = typeof n8nData.url === 'string' ? n8nData.url : null;
+        const analysis = typeof n8nData.analysis === 'string' ? n8nData.analysis : null;
+        const aiStatus = typeof n8nData.status === 'string' ? n8nData.status : 'UNKNOWN';
 
         if (!webViewLink) {
             await prisma.task.update({
