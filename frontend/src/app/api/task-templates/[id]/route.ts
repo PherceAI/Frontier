@@ -9,6 +9,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
+    await prisma.taskTemplate.findFirstOrThrow({ where: { id, company_id: user.company_id } });
+
     const body = await request.json();
     const data = await prisma.taskTemplate.update({
         where: { id }, data: body,
@@ -21,6 +23,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const user = await requireAdmin(request);
     if (isErrorResponse(user)) return user;
     const { id } = await params;
+
+    await prisma.taskTemplate.findFirstOrThrow({ where: { id, company_id: user.company_id } });
 
     await prisma.taskTemplate.update({ where: { id }, data: { is_active: false } });
     return NextResponse.json({ success: true, data: { message: 'Plantilla desactivada' } });

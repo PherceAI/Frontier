@@ -1,0 +1,5 @@
+
+## 2024-05-29 - [Missing Tenant Isolation on Config Mutations]
+**Vulnerability:** Insecure Direct Object Reference (IDOR) on config entity PATCH/DELETE endpoints (e.g. task-templates, operational areas). The endpoints were directly calling `prisma.entity.update({ where: { id } })` without scoping the query to the authenticated admin's `company_id`.
+**Learning:** Config mutation endpoints were missing tenant isolation checks. While GET endpoints correctly used `findFirstOrThrow` with `company_id`, mutation endpoints relied solely on the `id` from the URL parameter. This would allow an admin of one company to modify or soft-delete task-templates belonging to another company by guessing their ID. Prisma's `update` method requires a unique identifier in the `where` clause, making it difficult to include `company_id` directly in the update if it's not part of a compound unique index.
+**Prevention:** Always precede `update` or `delete` operations with a `findFirstOrThrow` check that includes `company_id` in the `where` clause to verify authorization, or use a compound unique constraint.
