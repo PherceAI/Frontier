@@ -1,0 +1,4 @@
+## 2024-05-31 - Integer-Based IDOR in Nested Prisma Relations
+**Vulnerability:** IDOR vulnerability in task checklist completion endpoints where `findUniqueOrThrow` verified only the primary key (`itemId`), allowing employees to complete checklist items belonging to tasks assigned to other employees or even other companies.
+**Learning:** For nested resources (e.g., `tasks/[taskId]/items/[itemId]`), checking the child item ID is insufficient for multi-tenant applications. Direct object references via integers are easy to guess or enumerate, requiring explicit verification of the parent task's tenant and assignee.
+**Prevention:** Always use `findFirstOrThrow` to incorporate relationship checks directly in the database query. Ensure that the query validates the child belongs to the parent (`task_id`) AND the parent belongs to the active tenant/assignee context.
