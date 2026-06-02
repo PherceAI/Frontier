@@ -22,6 +22,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
+    // Sentinel: Prevent IDOR by ensuring the employee belongs to the admin's company
+    const employee = await prisma.employee.findFirst({ where: { id, company_id: user.company_id } });
+    if (!employee) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Empleado no encontrado' } }, { status: 404 });
+
     const body = await request.json();
     const { area_ids, areaIds, full_name, fullName, employee_code, employeeCode, shift, ...rest } = body;
     const finalAreaIds = area_ids || areaIds;
@@ -59,6 +63,10 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const user = await requireAdmin(request);
     if (isErrorResponse(user)) return user;
     const { id } = await params;
+
+    // Sentinel: Prevent IDOR by ensuring the employee belongs to the admin's company
+    const employee = await prisma.employee.findFirst({ where: { id, company_id: user.company_id } });
+    if (!employee) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Empleado no encontrado' } }, { status: 404 });
 
     await prisma.employee.update({ where: { id }, data: { is_active: false } });
     return NextResponse.json({ success: true, data: { message: 'Empleado desactivado' } });

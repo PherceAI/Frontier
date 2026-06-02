@@ -1,0 +1,4 @@
+## 2024-05-15 - [IDOR in Prisma Mutations]
+**Vulnerability:** Insecure Direct Object Reference (IDOR) vulnerabilities existed in PATCH and DELETE API endpoints for configurations (e.g., employees, task-templates, areas) due to directly updating resources via ID without ensuring the resource belonged to the requesting admin's `company_id`.
+**Learning:** Prisma's `update` and `delete` methods require unique identifier constraints in the `where` clause. Because `company_id` is typically not part of the primary key, it cannot simply be added to the `where` clause for mutations. This leads to developers omitting the tenancy check when modifying resources.
+**Prevention:** Always use `findFirstOrThrow` with the `company_id` included in the `where` clause to enforce tenant isolation and verify ownership *before* performing any `update` or `delete` mutation.
