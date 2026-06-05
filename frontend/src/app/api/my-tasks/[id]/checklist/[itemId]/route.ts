@@ -9,7 +9,25 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(auth)) return auth;
     const { itemId } = await params;
 
-    const item = await prisma.taskChecklistItem.findUniqueOrThrow({ where: { id: parseInt(itemId) } });
+    const { id: taskId } = await params;
+
+    const item = await prisma.taskChecklistItem.findFirst({
+        where: {
+            id: parseInt(itemId),
+            task_id: taskId,
+            task: {
+                company_id: auth.employee.company_id,
+                assigned_to: auth.employee.id,
+            },
+        },
+    });
+
+    if (!item) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Item no encontrado' } },
+            { status: 404 }
+        );
+    }
 
     const data = await prisma.taskChecklistItem.update({
         where: { id: parseInt(itemId) },
