@@ -1,0 +1,5 @@
+
+## 2024-05-18 - [HIGH] Fix IDOR in Task Checklist Item Update
+**Vulnerability:** IDOR vulnerability in the `my-tasks/[id]/checklist/[itemId]` API route allowed users to update arbitrary checklist items because it queried using `findUniqueOrThrow` with only the `itemId`, failing to verify the task relationship (`task_id`), the tenant boundaries (`company_id`), or task assignment (`assigned_to`).
+**Learning:** Using `findUniqueOrThrow` limits queries to only unique identifiers. To enforce relationship bounds and multi-tenant isolation, queries should be constructed using `findFirst` instead to include non-unique fields (such as parent associations or ownership limits) in the `where` clause. Additionally, throwing errors out of boundary checks results in 500 errors; using `findFirst` and returning a clear 404 response gracefully manages unauthenticated access.
+**Prevention:** Always enforce tenant and relationship bounds on nested resources using `findFirst` checking both the primary key and the expected relational mapping before allowing modification operations.
