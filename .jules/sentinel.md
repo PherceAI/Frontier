@@ -1,0 +1,4 @@
+## 2025-02-20 - IDOR in nested task checklist endpoints
+**Vulnerability:** Insecure Direct Object Reference (IDOR) on `/api/my-tasks/[id]/checklist/[itemId]` where an employee could modify checklist items belonging to other tenants or employees by enumerating the `itemId`.
+**Learning:** `prisma.findUniqueOrThrow` with just the item's primary key (`id`) bypasses the required authorization checks on the parent entity (`task_id`, `company_id`, `assigned_to`), allowing cross-tenant modifications and triggering a 500 server error when not found instead of handling it gracefully.
+**Prevention:** Avoid `findUniqueOrThrow` when authorization checks are needed. Use `prisma.findFirst` instead to query by both the resource ID and its relationship graph (e.g. `task: { company_id, assigned_to }`), and return a structured 404 response if not found.
