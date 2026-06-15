@@ -1,0 +1,4 @@
+## 2024-06-15 - [IDOR in Operations Task Update]
+**Vulnerability:** The PATCH endpoint `/api/operations/tasks/[taskId]` fetched tasks directly by `taskId` without validating `company_id` and `assigned_to` using `findFirstOrThrow`, allowing users to modify tasks that didn't belong to them if they could guess the UUID.
+**Learning:** To prevent IDOR vulnerabilities, endpoints modifying resources must always verify that the resource belongs to the current user or company within the database query itself.
+**Prevention:** Always use `findFirst` and verify `company_id` and context ownership (like `assigned_to` for tasks) before executing any update or delete operations on nested resources. Avoid `findFirstOrThrow` on basic lookups to provide proper 404 responses instead of unhandled 500 exceptions.
