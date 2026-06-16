@@ -10,7 +10,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const { taskId } = await params;
 
     const body = await request.json();
-    const existing = await prisma.task.findFirstOrThrow({ where: { id: taskId } });
+    const existing = await prisma.task.findFirst({
+        where: {
+            id: taskId,
+            company_id: auth.employee.company_id,
+            // Only enforce company_id to prevent cross-tenant IDOR, allowing operations staff/managers to manage tasks within their company.
+        }
+    });
+
+    if (!existing) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Tarea no encontrada o acceso denegado' } },
+            { status: 404 }
+        );
+    }
+
     const updateData: Record<string, unknown> = { ...body };
 
     if (body.status === 'IN_PROGRESS' && !existing.started_at) updateData.started_at = new Date();
