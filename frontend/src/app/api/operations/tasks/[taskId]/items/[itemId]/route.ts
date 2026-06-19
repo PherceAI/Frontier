@@ -11,6 +11,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json();
 
+    const item = await prisma.taskChecklistItem.findFirst({
+        where: {
+            id: parseInt(itemId),
+            task: {
+                id: taskId,
+                company_id: auth.employee.company_id
+            }
+        }
+    });
+
+    if (!item) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Item not found' } },
+            { status: 404 }
+        );
+    }
+
     const data = await prisma.taskChecklistItem.update({
         where: { id: parseInt(itemId) },
         data: { is_completed: body.is_completed, completed_at: body.is_completed ? new Date() : null },
