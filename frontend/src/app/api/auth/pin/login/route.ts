@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isRateLimited } from '@/lib/rate-limit';
 import { prisma } from '@/lib/prisma';
 import { comparePassword, generateSessionToken, hashToken } from '@/lib/auth/helpers';
 
 export async function POST(request: NextRequest) {
+    if (isRateLimited(request)) {
+        return NextResponse.json({ success: false, error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Demasiados intentos de inicio de sesión. Por favor, inténtelo de nuevo más tarde.' } }, { status: 429 });
+    }
+
     try {
         const { pin } = await request.json();
         if (!pin) {
