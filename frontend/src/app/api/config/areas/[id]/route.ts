@@ -20,6 +20,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
+    const existing = await prisma.operationalArea.findFirst({
+        where: { id, company_id: user.company_id }
+    });
+    if (!existing) {
+        return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });
+    }
+
     const body = await request.json();
     const data = await prisma.operationalArea.update({ where: { id }, data: body });
     return NextResponse.json({ success: true, data });
@@ -29,6 +36,13 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const user = await requireAdmin(request);
     if (isErrorResponse(user)) return user;
     const { id } = await params;
+
+    const existing = await prisma.operationalArea.findFirst({
+        where: { id, company_id: user.company_id }
+    });
+    if (!existing) {
+        return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Área no encontrada' } }, { status: 404 });
+    }
 
     await prisma.operationalArea.update({ where: { id }, data: { is_active: false } });
     return NextResponse.json({ success: true, data: { message: 'Área desactivada' } });
