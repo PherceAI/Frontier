@@ -1,0 +1,4 @@
+## 2024-06-23 - Fix IDOR in Operational Area Configuration
+**Vulnerability:** The PATCH and DELETE endpoints for Operational Areas in `frontend/src/app/api/config/areas/[id]/route.ts` directly executed `prisma.operationalArea.update` using only the `id` from the URL, failing to verify `company_id` ownership, which causes an Insecure Direct Object Reference (IDOR) vulnerability.
+**Learning:** `prisma.update` and `prisma.delete` operations do not enforce relations automatically. Only the unique primary key is required, and any additional parameters in `where` (like `company_id`) might cause Prisma type errors if they are not part of the unique identifier.
+**Prevention:** Always verify ownership first using `prisma.findFirst` coupled with a 404 JSON response (instead of `findFirstOrThrow` to avoid HTTP 500 errors) before executing mutations on configurable entities.
