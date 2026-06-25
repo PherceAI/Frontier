@@ -7,9 +7,14 @@ type Params = { params: Promise<{ id: string; itemId: string }> };
 export async function PATCH(request: NextRequest, { params }: Params) {
     const auth = await requireSession(request);
     if (isErrorResponse(auth)) return auth;
-    const { itemId } = await params;
+    const { id, itemId } = await params;
+    const item = await prisma.taskChecklistItem.findFirst({
+        where: { id: parseInt(itemId), task_id: id, task: { assigned_to: auth.employee.id } }
+    });
 
-    const item = await prisma.taskChecklistItem.findUniqueOrThrow({ where: { id: parseInt(itemId) } });
+    if (!item) {
+        return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Item not found' } }, { status: 404 });
+    }
 
     const data = await prisma.taskChecklistItem.update({
         where: { id: parseInt(itemId) },
