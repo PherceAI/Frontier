@@ -39,10 +39,10 @@ async function api(path: string, options: {
 
 // ─── Shared State ─────────────────────────────────────────────────────
 let adminToken = '';
-let employeeTokens: Record<string, string> = {};
-let employeeData: Record<string, any> = {};
+const employeeTokens: Record<string, string> = {};
+const employeeData: Record<string, any> = {};
 let createdTaskId = '';
-let employeeIds: Record<string, string> = {};
+const employeeIds: Record<string, string> = {};
 
 // Known test PINs we'll set via admin API
 const TEST_PINS: Record<string, string> = {
