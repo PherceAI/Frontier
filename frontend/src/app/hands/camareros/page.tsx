@@ -76,7 +76,7 @@ export default function CamarerasView() {
                         'sábanas grandes', 'sábanas medianas', 'sábanas pequeñas',
                         'toallas grandes', 'toallas medianas', 'toallas pequeñas'
                     ];
-                    let mappedItems = itemsRequest.data.filter((i: any) =>
+                    const mappedItems = itemsRequest.data.filter((i: any) =>
                         allowedNames.includes(i.name.toLowerCase().trim())
                     );
 
