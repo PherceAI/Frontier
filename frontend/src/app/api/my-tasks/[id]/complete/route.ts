@@ -9,6 +9,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(auth)) return auth;
     const { id } = await params;
 
+    const task = await prisma.task.findFirst({
+        where: { id, assigned_to: auth.employee.id, company_id: auth.employee.company_id }
+    });
+
+    if (!task) {
+        return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Task not found or you do not have permission to access it.' } }, { status: 404 });
+    }
+
     const body = await request.json().catch(() => ({}));
 
     const data = await prisma.task.update({
