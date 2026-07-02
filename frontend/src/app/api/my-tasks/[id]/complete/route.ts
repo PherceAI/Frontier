@@ -11,6 +11,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const body = await request.json().catch(() => ({}));
 
+    const task = await prisma.task.findFirst({
+        where: { id, assigned_to: auth.employee.id, company_id: auth.employee.company_id }
+    });
+    if (!task) {
+        return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Tarea no encontrada' } }, { status: 404 });
+    }
+
     const data = await prisma.task.update({
         where: { id },
         data: { status: 'COMPLETED', completed_at: new Date(), completion_notes: body.completion_notes ?? body.notes ?? null },
