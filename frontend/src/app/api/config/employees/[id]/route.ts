@@ -9,10 +9,17 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
-    const data = await prisma.employee.findFirstOrThrow({
+    const data = await prisma.employee.findFirst({
         where: { id, company_id: user.company_id },
         include: { areas: { include: { area: true } } },
     });
+
+    if (!data) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Empleado no encontrado' } },
+            { status: 404 }
+        );
+    }
 
     return NextResponse.json({ success: true, data });
 }
@@ -21,6 +28,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const user = await requireAdmin(request);
     if (isErrorResponse(user)) return user;
     const { id } = await params;
+
+    const existing = await prisma.employee.findFirst({
+        where: { id, company_id: user.company_id },
+    });
+
+    if (!existing) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Empleado no encontrado' } },
+            { status: 404 }
+        );
+    }
 
     const body = await request.json();
     const { area_ids, areaIds, full_name, fullName, employee_code, employeeCode, shift, ...rest } = body;
@@ -59,6 +77,17 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     const user = await requireAdmin(request);
     if (isErrorResponse(user)) return user;
     const { id } = await params;
+
+    const existing = await prisma.employee.findFirst({
+        where: { id, company_id: user.company_id },
+    });
+
+    if (!existing) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Empleado no encontrado' } },
+            { status: 404 }
+        );
+    }
 
     await prisma.employee.update({ where: { id }, data: { is_active: false } });
     return NextResponse.json({ success: true, data: { message: 'Empleado desactivado' } });
