@@ -9,7 +9,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
-    const existing = await prisma.task.findFirstOrThrow({ where: { id, company_id: user.company_id } });
+    const existing = await prisma.task.findFirst({ where: { id, company_id: user.company_id } });
+    if (!existing) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Tarea no encontrada' } },
+            { status: 404 }
+        );
+    }
+
     const body = await request.json();
     const updateData: Record<string, unknown> = { ...body };
 
@@ -33,7 +40,13 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (isErrorResponse(user)) return user;
     const { id } = await params;
 
-    await prisma.task.findFirstOrThrow({ where: { id, company_id: user.company_id } });
+    const existing = await prisma.task.findFirst({ where: { id, company_id: user.company_id } });
+    if (!existing) {
+        return NextResponse.json(
+            { success: false, error: { code: 'NOT_FOUND', message: 'Tarea no encontrada' } },
+            { status: 404 }
+        );
+    }
     await prisma.task.delete({ where: { id } });
     return NextResponse.json({ success: true, data: { message: 'Tarea eliminada' } });
 }
